@@ -1,0 +1,27 @@
+---
+name: Publish tests report
+
+on:
+  workflow_call:
+
+jobs:
+  test-publish-gh:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Download reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: |
+            **/coverage*.xml

@@ -1,0 +1,53 @@
+services:
+  restapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "18080:8080"
+      - "18081:8081"
+    environment:
+      - APP_NAME=restapi-example
+      - APP_ENVIRONMENT=dev
+      - LOGGING_LEVEL=debug
+      - TELEMETRY_ENABLED=true
+      - TELEMETRY_TRACING_ENDPOINT=otel-lgtm:4317
+      - TELEMETRY_SERVICE_NAME=restapi-example
+    depends_on:
+      - otel-lgtm
+
+  loadgen:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: ["/loadgen"]
+    environment:
+      - TARGET_URL=http://restapi:8080/api/hello
+      - RPS=3
+      - WORKERS=2
+      - DURATION=600s
+    depends_on:
+      - restapi
+
+  otel-lgtm:
+    image: grafana/otel-lgtm:latest
+    restart: unless-stopped
+    ports:
+      - "14317:4317"
+      - "14318:4318"
+      - "13000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+    volumes:
+      - otel-lgtm-grafana:/data/grafana
+      - otel-lgtm-prometheus:/data/prometheus
+      - otel-lgtm-loki:/data/loki
+      - ./deploy/prometheus/prometheus.yaml:/otel-lgtm/prometheus.yaml:ro
+      - ./deploy/grafana/dashboards-provisioning.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/custom.yaml:ro
+      - ./deploy/grafana/dashboards:/otel-lgtm/grafana/conf/provisioning/dashboards/custom:ro
+
+volumes:
+  otel-lgtm-grafana:
+  otel-lgtm-prometheus:
+  otel-lgtm-loki:

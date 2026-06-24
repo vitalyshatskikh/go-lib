@@ -1,0 +1,91 @@
+{
+  "title": "Go Runtime Overview",
+  "uid": "go-runtime-metrics",
+  "version": 1,
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "datasource": "prometheus",
+  "panels": [
+    {
+      "title": "Goroutines & Threads",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "go_goroutines{}", "legendFormat": "goroutines"},
+        {"expr": "go_threads{}", "legendFormat": "OS threads"}
+      ],
+      "fieldConfig": {
+        "defaults": {"unit": "short", "min": 0}
+      }
+    },
+    {
+      "title": "Process Resources",
+      "type": "timeseries",
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "process_resident_memory_bytes{}", "legendFormat": "RSS"},
+        {"expr": "rate(process_cpu_seconds_total[1m])", "legendFormat": "CPU"},
+        {"expr": "process_open_fds{}", "legendFormat": "open FDs"}
+      ],
+      "fieldConfig": {
+        "defaults": {"min": 0}
+      }
+    },
+    {
+      "title": "Heap Memory Breakdown",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "go_memstats_heap_inuse_bytes{}", "legendFormat": "in use"},
+        {"expr": "go_memstats_heap_idle_bytes{}", "legendFormat": "idle"},
+        {"expr": "go_memstats_heap_sys_bytes{}", "legendFormat": "sys"}
+      ],
+      "fieldConfig": {
+        "defaults": {"unit": "bytes", "min": 0}
+      }
+    },
+    {
+      "title": "Allocation Activity",
+      "type": "timeseries",
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "go_memstats_heap_objects{}", "legendFormat": "heap objects"},
+        {"expr": "rate(go_memstats_mallocs_total[1m])", "legendFormat": "mallocs/s"},
+        {"expr": "rate(go_memstats_frees_total[1m])", "legendFormat": "frees/s"}
+      ],
+      "fieldConfig": {
+        "defaults": {"min": 0}
+      }
+    },
+    {
+      "title": "GC Pause Duration",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "go_gc_duration_seconds{quantile=\"0.5\"}", "legendFormat": "p50"},
+        {"expr": "go_gc_duration_seconds{quantile=\"0.95\"}", "legendFormat": "p95"},
+        {"expr": "go_gc_duration_seconds{quantile=\"0.99\"}", "legendFormat": "p99"}
+      ],
+      "fieldConfig": {
+        "defaults": {"unit": "s", "min": 0}
+      }
+    },
+    {
+      "title": "Next GC & Stack",
+      "type": "timeseries",
+      "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "go_memstats_next_gc_bytes{}", "legendFormat": "next GC threshold"},
+        {"expr": "go_memstats_stack_inuse_bytes{}", "legendFormat": "stack in use"}
+      ],
+      "fieldConfig": {
+        "defaults": {"unit": "bytes", "min": 0}
+      }
+    }
+  ],
+  "schemaVersion": 36
+}

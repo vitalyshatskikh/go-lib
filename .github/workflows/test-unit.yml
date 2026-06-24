@@ -1,0 +1,32 @@
+---
+name: Run unit tests
+
+on:
+  workflow_call:
+
+jobs:
+
+  test-unit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Install dependencies
+        run:  make setup-tools
+
+      - name: Tests
+        run: make test-unit
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-unit
+          path: coverage-unit.*

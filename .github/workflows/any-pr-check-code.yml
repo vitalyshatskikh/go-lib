@@ -1,0 +1,22 @@
+---
+name: PR check code
+
+on:
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  test-unit:
+    uses: ./.github/workflows/test-unit.yml
+
+  test-publish-results:
+    uses: ./.github/workflows/test-publish-gh.yml
+    needs:
+      - lint
+      - test-unit
+    if: ${{ always() }}

@@ -1,0 +1,15 @@
+---
+name: Check code quality
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  test-unit:
+    uses: ./.github/workflows/test-unit.yml

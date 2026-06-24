@@ -1,0 +1,63 @@
+{
+  "title": "Service Traces",
+  "uid": "service-traces",
+  "version": 1,
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "title": "Service Node Graph",
+      "type": "nodeGraph",
+      "gridPos": {"x": 0, "y": 0, "w": 24, "h": 10},
+      "datasource": {
+        "type": "tempo",
+        "uid": "tempo"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "query": "{ resource.service.name = \"restapi-example\" }",
+          "queryType": "serviceMap",
+          "limit": 20
+        }
+      ]
+    },
+    {
+      "title": "Recent Traces",
+      "type": "table",
+      "gridPos": {"x": 0, "y": 10, "w": 24, "h": 14},
+      "datasource": {
+        "type": "tempo",
+        "uid": "tempo"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "query": "{ resource.service.name = \"restapi-example\" }",
+          "queryType": "traceql",
+          "limit": 20
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "displayMode": "auto"
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "schemaVersion": 36
+}
