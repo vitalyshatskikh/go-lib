@@ -16,6 +16,7 @@ docker compose up -d
 ```
 
 URLs:
+- [Swagger (OpenAPI)](http://localhost:18080/docs)
 - [Example endpoint](http://localhost:18080/api/hello)
 - [Health check](http://localhost:18080/ping)
 - [Metrics](http://localhost:18081/metrics)

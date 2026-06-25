@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -236,4 +237,71 @@ func TestServer_StartAndShutdown_WhenServerRunning_ThenShutsDownGracefully(t *te
 
 	_, err = http.Get(fmt.Sprintf("http://127.0.0.1:%d/ping", port))
 	assert.Error(t, err)
+}
+
+func TestNew_WithOpenAPI_WhenInvalidSpec_ThenReturnsError(t *testing.T) {
+	resetPrometheusRegistry()
+
+	cfg := setupTestConfig()
+	_, err := New(cfg, WithOpenAPI(strings.NewReader("key:\n\tvalue")))
+
+	require.Error(t, err)
+}
+
+func TestNew_WithOpenAPI_WhenServerCreated_ThenServesSpecEndpoint(t *testing.T) {
+	resetPrometheusRegistry()
+
+	cfg := setupTestConfig()
+	spec := `{"openapi":"3.0.0","info":{"title":"Test","version":"1.0.0"}}`
+	srv, err := New(cfg, WithOpenAPI(strings.NewReader(spec)))
+	require.NoError(t, err)
+
+	ts := httptest.NewServer(srv.apiServer.Handler)
+	t.Cleanup(ts.Close)
+
+	resp, err := ts.Client().Get(ts.URL + "/docs/openapi.json")
+	require.NoError(t, err)
+	defer resp.Body.Close() // nolint: errcheck
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.JSONEq(t, spec, string(body))
+}
+
+func TestNew_WithOpenAPI_WhenServerCreated_ThenServesDocsUI(t *testing.T) {
+	resetPrometheusRegistry()
+
+	cfg := setupTestConfig()
+	srv, err := New(cfg, WithOpenAPI(strings.NewReader(`{"openapi":"3.0.0"}`)))
+	require.NoError(t, err)
+
+	ts := httptest.NewServer(srv.apiServer.Handler)
+	t.Cleanup(ts.Close)
+
+	resp, err := ts.Client().Get(ts.URL + "/docs/")
+	require.NoError(t, err)
+	defer resp.Body.Close() // nolint: errcheck
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Contains(t, resp.Header.Get("Content-Type"), "text/html")
+}
+
+func TestNew_WithOpenAPI_WhenNoSpec_ThenDocsNotServed(t *testing.T) {
+	resetPrometheusRegistry()
+
+	cfg := setupTestConfig()
+	srv, err := New(cfg)
+	require.NoError(t, err)
+
+	ts := httptest.NewServer(srv.apiServer.Handler)
+	t.Cleanup(ts.Close)
+
+	resp, err := ts.Client().Get(ts.URL + "/docs/")
+	require.NoError(t, err)
+	defer resp.Body.Close() // nolint: errcheck
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

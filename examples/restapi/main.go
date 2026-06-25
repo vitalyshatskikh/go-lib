@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
 	"log"
 	"math/rand"
@@ -18,6 +20,9 @@ import (
 	"github.com/vitalyshatskikh/go-lib/http/restapi"
 	"github.com/vitalyshatskikh/go-lib/observability"
 )
+
+//go:embed openapi.yml
+var openapiYML []byte
 
 func main() {
 	cfg, err := config.Load()
@@ -63,7 +68,7 @@ func run(cfg *config.Config, logger *zap.Logger) error {
 	}
 	c.Add(shutdownMetrics)
 
-	srv, err := restapi.New(cfg, restapi.WithLogger(logger))
+	srv, err := restapi.New(cfg, restapi.WithLogger(logger), restapi.WithOpenAPI(bytes.NewReader(openapiYML)))
 	if err != nil {
 		return fmt.Errorf("failed to create server: %w", err)
 	}

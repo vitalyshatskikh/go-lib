@@ -1,0 +1,87 @@
+openapi: 3.0.3
+info:
+  title: go-lib REST API Example
+  description: |
+    Example HTTP server built with the go-lib library.
+
+    Default error responses (returned for any unmatched route or method):
+    - 404 Not Found: `{"error": "not found"}`
+    - 405 Method Not Allowed: `{"error": "method not allowed"}`
+  version: 0.1.0
+
+paths:
+  /ping:
+    get:
+      summary: Health check
+      description: Returns service status, name, version, and hostname.
+      operationId: ping
+      tags:
+        - health
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PingResponse"
+
+  /api/hello:
+    get:
+      summary: Demo endpoint
+      description: |
+        Simulates random latency (0–999 ms) and random errors:
+        - ~90% chance of 200 OK
+        - ~9% chance of 400 Bad Request
+        - ~1% chance of 500 Internal Server Error
+      operationId: hello
+      tags:
+        - api
+      responses:
+        "200":
+          description: Successful response
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Hello, Kitty!"
+        "400":
+          description: Bad request (random simulation)
+        "500":
+          description: Internal server error (random simulation)
+
+components:
+  schemas:
+    PingResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: available
+        service:
+          type: string
+          example: my-app
+        version:
+          type: string
+          example: 0.1.0
+        hostname:
+          type: string
+          example: 0.0.0.0
+      required:
+        - status
+        - service
+        - version
+        - hostname
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: not found
+        detail:
+          type: object
+          description: Additional error details (optional)
+          example: { "field": "name", "reason": "required" }
+      required:
+        - error

@@ -20,15 +20,17 @@ import (
 const (
 	pingPath  = "/ping"
 	debugPath = "/debug"
+	docsPath  = "/docs"
 )
 
 // Server wraps an HTTP server with a chi router, built-in middleware
 // (zap request logging, Prometheus metrics, recoverer), a /ping health
 // endpoint, and optional /debug pprof when Debug is enabled.
 type Server struct {
-	apiServer *http.Server
-	router    *chi.Mux
-	logger    *zap.Logger
+	apiServer   *http.Server
+	router      *chi.Mux
+	logger      *zap.Logger
+	openapiJSON []byte
 }
 
 type ServerOption func(s *Server) error
@@ -96,6 +98,11 @@ func New(cfg *config.Config, options ...ServerOption) (*Server, error) {
 	if cfg.Debug {
 		srv.logger.Info("enabling profiler")
 		router.Mount(debugPath, middleware.Profiler())
+	}
+
+	if srv.openapiJSON != nil {
+		srv.logger.Info("enabling openapi endpoint")
+		srv.router.Mount(docsPath, OpenAPIHandler(srv.openapiJSON, srv.router.NotFoundHandler()))
 	}
 
 	return srv, nil
