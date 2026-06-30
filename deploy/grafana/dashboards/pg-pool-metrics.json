@@ -1,0 +1,102 @@
+{
+  "title": "PG Pool Metrics",
+  "uid": "pg-pool-metrics",
+  "version": 1,
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "datasource": "prometheus",
+  "templating": {
+    "list": [
+      {
+        "name": "db_name",
+        "type": "query",
+        "query": "label_values(pg_pool_max_conns, db_name)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  },
+  "panels": [
+    {
+      "title": "Pool Capacity",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "pg_pool_max_conns{db_name=~\"$db_name\"}", "legendFormat": "max"},
+        {"expr": "pg_pool_total_conns{db_name=~\"$db_name\"}", "legendFormat": "total"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0}}
+    },
+    {
+      "title": "Pool Utilization",
+      "type": "stat",
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "pg_pool_acquired_conns{db_name=~\"$db_name\"} / pg_pool_max_conns{db_name=~\"$db_name\"}"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 0.7},
+              {"color": "red", "value": 0.9}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Connection State Breakdown",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "pg_pool_acquired_conns{db_name=~\"$db_name\"}", "legendFormat": "acquired"},
+        {"expr": "pg_pool_idle_conns{db_name=~\"$db_name\"}", "legendFormat": "idle"},
+        {"expr": "pg_pool_constructing_conns{db_name=~\"$db_name\"}", "legendFormat": "constructing"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0}},
+      "options": {"stacking": {"mode": "normal"}}
+    },
+    {
+      "title": "Acquire Rate",
+      "type": "timeseries",
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "rate(pg_pool_acquire_total{db_name=~\"$db_name\"}[1m])", "legendFormat": "{{db_name}}"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "cps", "min": 0}}
+    },
+    {
+      "title": "Acquire Latency (avg)",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "rate(pg_pool_acquire_duration_seconds_total{db_name=~\"$db_name\"}[1m]) / rate(pg_pool_acquire_total{db_name=~\"$db_name\"}[1m])",
+          "legendFormat": "{{db_name}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "s", "min": 0}}
+    },
+    {
+      "title": "Active Connections",
+      "type": "stat",
+      "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "pg_pool_acquired_conns{db_name=~\"$db_name\"}", "legendFormat": "{{db_name}}"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0}}
+    }
+  ],
+  "schemaVersion": 36
+}

@@ -13,10 +13,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 
 	"github.com/vitalyshatskikh/go-lib/closer"
 	"github.com/vitalyshatskikh/go-lib/config"
+	"github.com/vitalyshatskikh/go-lib/database/postgres"
 	"github.com/vitalyshatskikh/go-lib/http/restapi"
 	"github.com/vitalyshatskikh/go-lib/observability"
 )
@@ -74,8 +76,14 @@ func run(cfg *config.Config, logger *zap.Logger) error {
 	}
 	c.Add(srv.Shutdown)
 
+	pool, err := postgres.NewPGXPool(cfg.Postgres, logger)
+	if err != nil {
+		return fmt.Errorf("failed to create db pool: %w", err)
+	}
+
+	handler := NewHandler(&PGRepository{Pool: pool})
 	err = srv.Mount(
-		restapi.SubRoute{Prefix: "/api", Handler: http.StripPrefix("/api", NewHandler())},
+		restapi.SubRoute{Prefix: "/api", Handler: http.StripPrefix("/api", handler)},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to mount routes: %w", err)
@@ -100,7 +108,7 @@ func run(cfg *config.Config, logger *zap.Logger) error {
 	return nil
 }
 
-func NewHandler() http.Handler {
+func NewHandler(repo Repository) http.Handler {
 	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	mux := http.NewServeMux()
@@ -117,9 +125,44 @@ func NewHandler() http.Handler {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+
+		name, err := repo.GetName(r.Context())
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("Hello, Kitty!"))
+		_, _ = fmt.Fprintf(w, "Hello, %s!", name)
 	})
 
 	return mux
+}
+
+type Repository interface {
+	GetName(ctx context.Context) (string, error)
+}
+
+type PGRepository struct {
+	Pool *pgxpool.Pool
+}
+
+func (p *PGRepository) Close(_ context.Context) error {
+	p.Pool.Close()
+	return nil
+}
+
+func (p *PGRepository) GetName(ctx context.Context) (string, error) {
+	conn, err := p.Pool.Acquire(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer conn.Release()
+
+	var name string
+	err = conn.QueryRow(ctx, "SELECT $1", "Kitty").Scan(&name)
+	if err != nil {
+		return "", err
+	}
+
+	return name, nil
 }

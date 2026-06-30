@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/gh/vitalyshatskikh/go-lib/branch/main/graph/badge.svg)](https://codecov.io/gh/vitalyshatskikh/go-lib)
 [![Go](https://img.shields.io/github/go-mod/go-version/vitalyshatskikh/go-lib)](https://github.com/vitalyshatskikh/go-lib)
 
-Shared Go library providing common utilities for Go services: environment-based configuration, graceful shutdown, structured logging, Prometheus metrics, OpenTelemetry tracing, and a chi-based HTTP server.
+Shared Go library providing common utilities for Go services: environment-based configuration, graceful shutdown, structured logging, Prometheus metrics, OpenTelemetry tracing, a chi-based HTTP server, and PostgreSQL connection pooling with observability.
 
 ## Example application
 
@@ -32,7 +32,9 @@ go get github.com/vitalyshatskikh/go-lib
 
 ### `config`
 
-Application configuration loaded from environment variables using `cleanenv` struct tags. Sub-configs use env prefixes (`APP_`, `API_`, `METRICS_`, `LOGGING_`, `TELEMETRY_`) with sensible defaults.
+Application configuration loaded from environment variables using `cleanenv` struct tags. Sub-configs use env prefixes (`APP_`, `API_`, `METRICS_`, `LOGGING_`, `TELEMETRY_`, `POSTGRES_`) with sensible defaults.
+
+Includes `SecretStr` — a string type that masks its value in logs and serialization (`"******"`) while exposing the actual value via `.Value()`.
 
 ```go
 cfg, err := config.Load()
@@ -71,6 +73,15 @@ telemetryCleanup, _ := observability.InitTelemetry(ctx, cfg, logger)
 
 Chi-based HTTP server with a built-in middleware stack: zap request logging, Prometheus metrics, OpenTelemetry tracing, and panic recovery. Includes a `/ping` health endpoint and optional `/debug/pprof`.
 
+All metrics are partitioned by `status_code`, `method`, `host`, and `path` labels:
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `http_server_requests_total` | Counter | Total HTTP requests processed |
+| `http_server_request_duration_seconds` | Histogram | Request latency in seconds |
+| `http_server_response_size_bytes` | Histogram | Response body size in bytes |
+| `http_server_request_size_bytes` | Histogram | Request body size in bytes |
+
 ```go
 srv, _ := restapi.New(cfg, logger, restapi.SubRoute{
     Prefix: "/api",
@@ -81,9 +92,37 @@ go srv.Start()
 srv.Shutdown(ctx)
 ```
 
+### `database/postgres`
+
+Observable PostgreSQL connection pool using `pgx/v5`. Creates a [`pgxpool.Pool`](https://github.com/jackc/pgx) with built-in:
+
+- **OpenTelemetry tracing** — spans for queries with semantic attributes
+- **Slow query logging** — configurable threshold logs warnings for queries/batches/copies
+- **Prometheus metrics** — custom collector exposing pool stats with a `db_name` label:
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `pg_pool_max_conns` | Gauge | Maximum number of connections |
+| `pg_pool_total_conns` | Gauge | Total number of connections |
+| `pg_pool_acquired_conns` | Gauge | Currently acquired connections |
+| `pg_pool_idle_conns` | Gauge | Idle connections |
+| `pg_pool_constructing_conns` | Gauge | Connections being established |
+| `pg_pool_acquire_total` | Counter | Total acquire operations |
+| `pg_pool_acquire_duration_seconds_total` | Counter | Cumulative acquire wait time |
+
+```go
+pool, err := postgres.NewPGXPool(cfg.Postgres, logger)
+if err != nil {
+    logger.Fatal("failed to create pool", zap.Error(err))
+}
+defer pool.Close()
+```
+
+Config supports structured fields (`Hosts`, `User`, `Password`, `Database`, `SSLMode`, `TargetSessionAttrs`) or a raw `DSN`. The `ConnString()` method builds a PostgreSQL URL from the structured fields.
+
 ## Quick Start
 
-See [`examples/restapi/`](examples/restapi/) for a complete application lifecycle example.
+See [`examples/restapi/`](examples/restapi/) for a complete application lifecycle example including database setup with `database/postgres`.
 
 ```go
 package main
@@ -145,20 +184,33 @@ func main() {
 
 | Env Var | Default | Description |
 |---|---|---|
-| `APP_NAME` | `app` | Service name |
-| `APP_VERSION` | `dev` | Service version |
+| `APP_NAME` | `my-app` | Service name |
+| `APP_VERSION` | `0.1.0` | Service version |
 | `APP_ENVIRONMENT` | `development` | Environment name |
 | `API_HOST` | `0.0.0.0` | HTTP server host |
 | `API_PORT` | `8080` | HTTP server port |
-| `METRICS_ENABLED` | `false` | Enable Prometheus metrics server |
+| `METRICS_ENABLED` | `true` | Enable Prometheus metrics server |
 | `METRICS_HOST` | `0.0.0.0` | Metrics server host |
-| `METRICS_PORT` | `9090` | Metrics server port |
+| `METRICS_PORT` | `8081` | Metrics server port |
 | `METRICS_PATH` | `/metrics` | Metrics endpoint path |
 | `LOGGING_LEVEL` | `info` | Log level (debug, info, warn, error) |
 | `TELEMETRY_ENABLED` | `false` | Enable OpenTelemetry tracing |
-| `TELEMETRY_SERVICE_NAME` | `app` | OTLP service name |
+| `TELEMETRY_SERVICE_NAME` | `my-app` | OTLP service name |
 | `TELEMETRY_TRACING_ENDPOINT` | `localhost:4317` | OTLP gRPC endpoint |
 | `TELEMETRY_SAMPLE_RATE` | `1.0` | Trace sampling rate (0.0–1.0) |
+| `POSTGRES_DSN` | `""` | Raw DSN (overrides structured fields) |
+| `POSTGRES_HOSTS` | `localhost:15432,localhost:15433` | Comma-separated host:port list |
+| `POSTGRES_USER` | `postgres` | Database user |
+| `POSTGRES_PASSWORD` | `postgres` | Database password (masked as `SecretStr`) |
+| `POSTGRES_DATABASE` | `postgres` | Database name |
+| `POSTGRES_SSLMODE` | `prefer` | SSL mode (disable, allow, prefer, require, verify-ca, verify-full) |
+| `POSTGRES_TARGET_SESSION_ATTRS` | `primary` | Session target (primary, standby, prefer-standby) |
+| `POSTGRES_MAX_CONNS` | `10` | Max pool connections |
+| `POSTGRES_MIN_CONNS` | `0` | Min pool connections |
+| `POSTGRES_MAX_CONN_LIFETIME` | `1h` | Max connection lifetime |
+| `POSTGRES_MAX_CONN_IDLE_TIME` | `30m` | Max connection idle time |
+| `POSTGRES_HEALTH_CHECK_PERIOD` | `1m` | Health check interval |
+| `POSTGRES_SLOW_QUERY_THRESHOLD` | `0` | Slow query log threshold (0 = disabled) |
 | `DEBUG` | `false` | Enable debug endpoints (pprof) |
 
 ## View Metrics and Traces
@@ -169,15 +221,16 @@ The repository includes a `docker-compose.yml` that runs the full observability 
 
 ### Custom Dashboards
 
-Three dashboards are mounted into Grafana automatically:
+Four dashboards are mounted into Grafana automatically:
 
 - **HTTP Server Metrics** — request rate, error ratio (5xx/total), latency percentiles (p50/p95/p99), and request/response sizes, broken down by method and path.
 - **Go Runtime Overview** — goroutines, OS threads, RSS/CPU/open FDs, heap in-use/idle/sys, allocation rate, GC pause duration (p50/p95/p99), next GC threshold.
+- **PostgreSQL Pool Metrics** — pool connection stats from the `pgxpool` collector: max/total/acquired/idle/constructing connections, acquire rate, and acquire wait duration.
 - **Service Traces** — Tempo service node graph showing inter-service dependencies, plus a recent traces table queryable by TraceQL (`{ resource.service.name = "restapi-example" }`).
 
 ### Example Application
 
-[`examples/restapi/`](examples/restapi/) implements a complete service lifecycle using this library. It exposes a `/api/hello` endpoint that simulates real-world behavior with random latency (0–1s) and varied response codes (~1% 500, ~9% 400, ~90% 200). It sends traces to the OTLP endpoint and exposes Prometheus metrics.
+[`examples/restapi/`](examples/restapi/) implements a complete service lifecycle using this library. It connects to PostgreSQL via `database/postgres`, exposes a `/api/hello` endpoint that queries the database and simulates real-world behavior with random latency (0–1s) and varied response codes (~1% 500, ~9% 400, ~90% 200). It sends traces to the OTLP endpoint and exposes Prometheus metrics.
 
 [`examples/loadgen/`](examples/loadgen/) is a configurable HTTP load generator that sends requests to a target URL at a given rate and reports live latency stats.
 
@@ -188,11 +241,13 @@ docker compose up -d
 ```
 
 This starts:
-1. **otel-lgtm** — the observability backend (Grafana at `http://localhost:13000`)
-2. **restapi** — the example service on `:18080` (API) and `:18081` (metrics)
-3. **loadgen** — sends 3 RPS to `/api/hello` for 10 minutes
+1. **postgres-primary** — primary PostgreSQL on `:15432` (WAL-configured for replication)
+2. **postgres-replica** — streaming replica on `:15433`
+3. **otel-lgtm** — the observability backend (Grafana at `http://localhost:13000`)
+4. **restapi** — the example service on `:18080` (API) and `:18081` (metrics)
+5. **loadgen** — sends 3 RPS to `/api/hello` for 10 minutes
 
-Open Grafana at `http://localhost:13000` (anonymous login enabled). Navigate to **Dashboards** to view the three custom dashboards. Traces appear in the **Service Traces** dashboard or under **Explore > Tempo**.
+Open Grafana at `http://localhost:13000` (anonymous login enabled). Navigate to **Dashboards** to view the four custom dashboards. Traces appear in the **Service Traces** dashboard or under **Explore > Tempo**.
 
 To run load generator next time:
 ```shell
