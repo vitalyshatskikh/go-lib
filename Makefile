@@ -16,10 +16,16 @@ test-unit:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) gotestsum --junitfile=coverage-unit.xml --jsonfile=coverage-unit.json -- \
  		-coverprofile=coverage-unit.txt -covermode atomic -race  ./...
 
+.PHONY: test-integration
+#? test-integration: Run integration tests (requires running Postgres)
+test-integration:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) gotestsum --junitfile=coverage-int.xml --jsonfile=coverage-int.json -- \
+ 		-tags=integration -coverprofile=coverage-int.txt -covermode atomic -race  ./database/...
+
 .PHONY: fmt
 #? fmt: Run gofmt
 fmt:
-	gofmt -s -l -w examples/ closer/ config/ http/ observability/
+	gofmt -s -l -w database/ examples/ closer/ config/ http/ observability/
 
 .PHONY: lint
 #? lint: Run golangci-lint
