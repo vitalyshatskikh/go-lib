@@ -11,21 +11,6 @@ jobs:
   codecov:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 15432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
 
@@ -35,6 +20,9 @@ jobs:
 
       - name: Install gocovmerge
         run: go install github.com/wadey/gocovmerge@latest
+
+      - name: Start PostgreSQL cluster
+        run: docker compose -f .github/integration-docker-compose.yml --project-directory ${{ github.workspace }} up -d --wait
 
       - name: Run unit tests with coverage
         run: go test -coverprofile=coverage-unit.txt -covermode atomic $(go list ./... | grep -v /examples/)
@@ -51,3 +39,7 @@ jobs:
           file: ./coverage.txt
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Cleanup PostgreSQL cluster
+        if: always()
+        run: docker compose -f .github/integration-docker-compose.yml --project-directory ${{ github.workspace }} down -v --remove-orphans
