@@ -3,6 +3,7 @@ package middlewares
 import (
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
@@ -15,7 +16,10 @@ const (
 	bMB
 )
 
-var sizeBuckets = []float64{1.0 * bKB, 2.0 * bKB, 5.0 * bKB, 10.0 * bKB, 100 * bKB, 500 * bKB, 1.0 * bMB, 2.5 * bMB, 5.0 * bMB, 10.0 * bMB}
+var (
+	sizeBuckets  = []float64{1.0 * bKB, 2.0 * bKB, 5.0 * bKB, 10.0 * bKB, 100 * bKB, 500 * bKB, 1.0 * bMB, 2.5 * bMB, 5.0 * bMB, 10.0 * bMB}
+	registerOnce sync.Once
+)
 
 // PrometheusMiddlewareConfig configures the Prometheus HTTP metrics middleware.
 type PrometheusMiddlewareConfig struct {
@@ -38,7 +42,6 @@ func NewPrometheusMiddleware(conf PrometheusMiddlewareConfig) func(next http.Han
 		},
 		labelNames,
 	)
-	registerer.MustRegister(requestCount)
 
 	requestDuration := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -52,7 +55,6 @@ func NewPrometheusMiddleware(conf PrometheusMiddlewareConfig) func(next http.Han
 		},
 		labelNames,
 	)
-	registerer.MustRegister(requestDuration)
 
 	responseSize := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -64,7 +66,6 @@ func NewPrometheusMiddleware(conf PrometheusMiddlewareConfig) func(next http.Han
 		},
 		labelNames,
 	)
-	registerer.MustRegister(responseSize)
 
 	requestSize := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -76,7 +77,13 @@ func NewPrometheusMiddleware(conf PrometheusMiddlewareConfig) func(next http.Han
 		},
 		labelNames,
 	)
-	registerer.MustRegister(requestSize)
+
+	registerOnce.Do(func() {
+		registerer.MustRegister(requestCount)
+		registerer.MustRegister(requestDuration)
+		registerer.MustRegister(responseSize)
+		registerer.MustRegister(requestSize)
+	})
 
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {

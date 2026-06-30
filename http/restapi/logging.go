@@ -23,6 +23,7 @@ type LogFormatter struct {
 	Skip   func(r *http.Request) bool
 }
 
+// NewLogEntry creates a new middleware.LogEntry for the given request.
 func (l LogFormatter) NewLogEntry(r *http.Request) middleware.LogEntry {
 	if l.Skip != nil && l.Skip(r) {
 		return noopLogEntry{}

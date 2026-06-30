@@ -15,6 +15,8 @@ const (
 	specURL = "/openapi.json"
 )
 
+// OpenAPIHandler returns an http.Handler that serves the OpenAPI spec at
+// /docs/openapi.json and renders Swagger UI at /docs.
 func OpenAPIHandler(jsonSpec []byte, next http.Handler) http.Handler {
 	router := chi.NewRouter()
 

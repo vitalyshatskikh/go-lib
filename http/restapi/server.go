@@ -33,9 +33,13 @@ type Server struct {
 	openapiJSON []byte
 }
 
+// ServerOption configures a Server during construction.
 type ServerOption func(s *Server) error
 
 // SubRoute describes a sub-router to mount on the server.
+//
+// Note: ensure Handler fills `http.Request.Pattern` with actual route pattern
+// - to log/meter/trace requests properly
 type SubRoute struct {
 	Prefix  string
 	Handler http.Handler
