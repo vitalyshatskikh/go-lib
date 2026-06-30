@@ -8,15 +8,34 @@ on:
 
 jobs:
 
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      database: ${{ steps.filter.outputs.database }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            database:
+              - 'database/**'
+
   lint:
     uses: ./.github/workflows/lint.yml
 
   test-unit:
     uses: ./.github/workflows/test-unit.yml
 
+  test-integration:
+    needs: changes
+    if: ${{ needs.changes.outputs.database == 'true' }}
+    uses: ./.github/workflows/test-integration.yml
+
   test-publish-results:
     uses: ./.github/workflows/test-publish-gh.yml
     needs:
       - lint
       - test-unit
+      - test-integration
     if: ${{ always() }}

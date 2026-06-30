@@ -10,6 +10,22 @@ on:
 jobs:
   codecov:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 15432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -17,8 +33,17 @@ jobs:
         with:
           go-version: "1.26"
 
-      - name: Run tests with coverage
-        run: go test -coverprofile=coverage.txt -covermode atomic $(go list ./... | grep -v /examples/)
+      - name: Install gocovmerge
+        run: go install github.com/wadey/gocovmerge@latest
+
+      - name: Run unit tests with coverage
+        run: go test -coverprofile=coverage-unit.txt -covermode atomic $(go list ./... | grep -v /examples/)
+
+      - name: Run integration tests with coverage
+        run: go test -tags=integration -coverprofile=coverage-int.txt -covermode atomic ./database/...
+
+      - name: Merge coverage profiles
+        run: gocovmerge coverage-unit.txt coverage-int.txt > coverage.txt
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
