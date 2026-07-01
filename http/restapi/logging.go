@@ -67,7 +67,7 @@ type logEntry struct {
 	logger    *zap.Logger
 }
 
-func (l logEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, extra interface{}) {
+func (l logEntry) Write(status, bytes int, _ http.Header, elapsed time.Duration, extra any) {
 	msg := fmt.Sprintf("%s %s", l.method, l.path)
 	fields := []zap.Field{
 		zap.Time("time", time.Now()),
@@ -94,14 +94,14 @@ func (l logEntry) Write(status, bytes int, header http.Header, elapsed time.Dura
 	}
 }
 
-func (l logEntry) Panic(v interface{}, stack []byte) {
+func (l logEntry) Panic(v any, _ []byte) {
 	middleware.PrintPrettyStack(v)
 }
 
 type noopLogEntry struct{}
 
-func (l noopLogEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, extra interface{}) {
+func (l noopLogEntry) Write(_, _ int, _ http.Header, _ time.Duration, _ any) {
 }
 
-func (l noopLogEntry) Panic(v interface{}, stack []byte) {
+func (l noopLogEntry) Panic(_ any, _ []byte) {
 }

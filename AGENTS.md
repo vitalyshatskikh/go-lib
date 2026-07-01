@@ -34,6 +34,7 @@ Never mention agent's name, model and vendor in commit messages or generated cod
 
 ### Lint/Format
 - `go fmt ./...` — format
+- `go fix ./...` — rewrite to modern Go
 - `go vet ./...` — static analysis
 - `golangci-lint run ./...` — if installed
 
@@ -65,4 +66,4 @@ Note: No tests currently exist in this repo. First contributions should follow t
 
 1. `go mod tidy` after adding dependencies
 2. `go fmt ./...` before committing
-3. `go vet ./...` then `go test ./...` before push
+3. `go fix ./...` then `go vet ./...` then `go test ./...` before push

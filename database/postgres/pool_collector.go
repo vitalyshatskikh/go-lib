@@ -7,13 +7,18 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+type poolKey struct {
+	dbName   string
+	poolName string
+}
+
 var (
 	pgxpoolCollector  = newPgxpoolCollector()
 	registerCollector sync.Once
 )
 
 type poolCollector struct {
-	pools sync.Map // keyed by db_name -> *pgxpool.Pool
+	pools sync.Map // keyed by poolKey -> *pgxpool.Pool
 
 	maxConnsDesc          *prometheus.Desc
 	totalConnsDesc        *prometheus.Desc
@@ -25,7 +30,7 @@ type poolCollector struct {
 }
 
 func newPgxpoolCollector() *poolCollector {
-	labels := []string{"db_name"}
+	labels := []string{"db_name", "client_pool_name"}
 	constLabels := prometheus.Labels{"type": "pgxpool"}
 
 	return &poolCollector{
@@ -67,9 +72,9 @@ func newPgxpoolCollector() *poolCollector {
 	}
 }
 
-func (c *poolCollector) add(pool *pgxpool.Pool) {
+func (c *poolCollector) add(pool *pgxpool.Pool, poolName string) {
 	dbName := pool.Config().ConnConfig.Database
-	c.pools.Store(dbName, pool)
+	c.pools.Store(poolKey{dbName: dbName, poolName: poolName}, pool)
 }
 
 func (c *poolCollector) Describe(ch chan<- *prometheus.Desc) {
@@ -83,46 +88,46 @@ func (c *poolCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *poolCollector) Collect(ch chan<- prometheus.Metric) {
-	c.pools.Range(func(key, value interface{}) bool {
+	c.pools.Range(func(key, value any) bool {
 		pool, ok := value.(*pgxpool.Pool)
 		if !ok {
 			return true
 		}
-		dbName, ok := key.(string)
+		pk, ok := key.(poolKey)
 		if !ok {
 			return true
 		}
 		stats := pool.Stat()
 
 		ch <- prometheus.MustNewConstMetric(
-			c.maxConnsDesc, prometheus.GaugeValue, float64(stats.MaxConns()), dbName,
+			c.maxConnsDesc, prometheus.GaugeValue, float64(stats.MaxConns()), pk.dbName, pk.poolName,
 		)
 		ch <- prometheus.MustNewConstMetric(
-			c.totalConnsDesc, prometheus.GaugeValue, float64(stats.TotalConns()), dbName,
+			c.totalConnsDesc, prometheus.GaugeValue, float64(stats.TotalConns()), pk.dbName, pk.poolName,
 		)
 		ch <- prometheus.MustNewConstMetric(
-			c.acquiredConnsDesc, prometheus.GaugeValue, float64(stats.AcquiredConns()), dbName,
+			c.acquiredConnsDesc, prometheus.GaugeValue, float64(stats.AcquiredConns()), pk.dbName, pk.poolName,
 		)
 		ch <- prometheus.MustNewConstMetric(
-			c.idleConnsDesc, prometheus.GaugeValue, float64(stats.IdleConns()), dbName,
+			c.idleConnsDesc, prometheus.GaugeValue, float64(stats.IdleConns()), pk.dbName, pk.poolName,
 		)
 		ch <- prometheus.MustNewConstMetric(
-			c.constructingConnsDesc, prometheus.GaugeValue, float64(stats.ConstructingConns()), dbName,
+			c.constructingConnsDesc, prometheus.GaugeValue, float64(stats.ConstructingConns()), pk.dbName, pk.poolName,
 		)
 		ch <- prometheus.MustNewConstMetric(
-			c.acquireTotalDesc, prometheus.CounterValue, float64(stats.AcquireCount()), dbName,
+			c.acquireTotalDesc, prometheus.CounterValue, float64(stats.AcquireCount()), pk.dbName, pk.poolName,
 		)
 		ch <- prometheus.MustNewConstMetric(
-			c.acquireDurationDesc, prometheus.CounterValue, stats.AcquireDuration().Seconds(), dbName,
+			c.acquireDurationDesc, prometheus.CounterValue, stats.AcquireDuration().Seconds(), pk.dbName, pk.poolName,
 		)
 
 		return true
 	})
 }
 
-func registerPGXPoolMetrics(pool *pgxpool.Pool) {
+func registerPGXPoolMetrics(pool *pgxpool.Pool, poolName string) {
 	registerCollector.Do(func() {
 		prometheus.MustRegister(pgxpoolCollector)
 	})
-	pgxpoolCollector.add(pool)
+	pgxpoolCollector.add(pool, poolName)
 }

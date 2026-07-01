@@ -23,7 +23,7 @@ func TestPoolCollector_Collect_WhenPool_ThenEmitsPoolMetrics(t *testing.T) {
 	defer pool.Close()
 
 	c := newPgxpoolCollector()
-	c.add(pool)
+	c.add(pool, "test-pool")
 
 	reg := prometheus.NewPedanticRegistry()
 	reg.MustRegister(c)
@@ -56,7 +56,7 @@ func TestPoolCollector_Collect_WhenCalled_ThenPoolsHaveDbNameLabel(t *testing.T)
 	defer pool.Close()
 
 	c := newPgxpoolCollector()
-	c.add(pool)
+	c.add(pool, "test-pool")
 
 	reg := prometheus.NewPedanticRegistry()
 	reg.MustRegister(c)
@@ -67,18 +67,22 @@ func TestPoolCollector_Collect_WhenCalled_ThenPoolsHaveDbNameLabel(t *testing.T)
 	for _, f := range families {
 		for _, m := range f.GetMetric() {
 			hasDbName := false
+			hasClientPoolName := false
 			for _, l := range m.GetLabel() {
 				if l.GetName() == "db_name" && l.GetValue() == "postgres" {
 					hasDbName = true
-					break
+				}
+				if l.GetName() == "client_pool_name" && l.GetValue() == "test-pool" {
+					hasClientPoolName = true
 				}
 			}
 			assert.True(t, hasDbName, "metric %s missing db_name=postgres label", f.GetName())
+			assert.True(t, hasClientPoolName, "metric %s missing client_pool_name=test-pool label", f.GetName())
 		}
 	}
 }
 
-func TestPoolCollector_Collect_WhenMultiplePoolsWithSameDbName_ThenLastWins(t *testing.T) {
+func TestPoolCollector_Collect_WhenMultiplePoolsWithSameDbNameAndDifferentPoolName_ThenBothEmitted(t *testing.T) {
 	cfg, err := config.Load()
 	require.NoError(t, err)
 
@@ -91,12 +95,17 @@ func TestPoolCollector_Collect_WhenMultiplePoolsWithSameDbName_ThenLastWins(t *t
 	defer pool2.Close()
 
 	c := newPgxpoolCollector()
-	c.add(pool1)
-	c.add(pool2)
+	c.add(pool1, "pool-alpha")
+	c.add(pool2, "pool-beta")
 
 	reg := prometheus.NewPedanticRegistry()
 	reg.MustRegister(c)
 
-	_, err = reg.Gather()
+	families, err := reg.Gather()
 	require.NoError(t, err)
+
+	require.Len(t, families, 7)
+	for _, f := range families {
+		require.Len(t, f.GetMetric(), 2, "expected 2 metric entries for %s (one per pool name)", f.GetName())
+	}
 }

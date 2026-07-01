@@ -82,8 +82,14 @@ type PostgresConfig struct {
 	MaxConnIdleTime   time.Duration `env:"MAX_CONN_IDLE_TIME" env-default:"30m"`
 	HealthCheckPeriod time.Duration `env:"HEALTH_CHECK_PERIOD" env-default:"1m"`
 
+	// Timeout options
+
+	PingTimeout    time.Duration `env:"PING_TIMEOUT" env-default:"30s"`
+	ConnectTimeout time.Duration `env:"CONNECT_TIMEOUT" env-default:"30s"`
+
 	// Observability options
 
+	PoolName           string        `env:"POOL_NAME" env-default:""`
 	SlowQueryThreshold time.Duration `env:"SLOW_QUERY_THRESHOLD" env-default:"0"`
 }
 

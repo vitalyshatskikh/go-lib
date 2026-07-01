@@ -18,6 +18,14 @@
         "refresh": 1,
         "includeAll": true,
         "multi": true
+      },
+      {
+        "name": "client_pool_name",
+        "type": "query",
+        "query": "label_values(pg_pool_max_conns, client_pool_name)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true
       }
     ]
   },
@@ -27,8 +35,14 @@
       "type": "timeseries",
       "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
       "targets": [
-        {"expr": "pg_pool_max_conns{db_name=~\"$db_name\"}", "legendFormat": "max"},
-        {"expr": "pg_pool_total_conns{db_name=~\"$db_name\"}", "legendFormat": "total"}
+        {
+          "expr": "pg_pool_max_conns{db_name=~\"$db_name\", client_pool_name=~\"$client_pool_name\"}",
+          "legendFormat": "{{db_name}} - {{client_pool_name}} max"
+        },
+        {
+          "expr": "pg_pool_total_conns{db_name=~\"$db_name\", client_pool_name=~\"$client_pool_name\"}",
+          "legendFormat": "{{db_name}} - {{client_pool_name}} total"
+        }
       ],
       "fieldConfig": {"defaults": {"unit": "short", "min": 0}}
     },
@@ -37,7 +51,7 @@
       "type": "stat",
       "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
       "targets": [
-        {"expr": "pg_pool_acquired_conns{db_name=~\"$db_name\"} / pg_pool_max_conns{db_name=~\"$db_name\"}"}
+        {"expr": "pg_pool_acquired_conns{db_name=~\"$db_name\", client_pool_name=~\"$client_pool_name\"} / pg_pool_max_conns{db_name=~\"$db_name\", client_pool_name=~\"$client_pool_name\"}"}
       ],
       "fieldConfig": {
         "defaults": {
@@ -60,9 +74,18 @@
       "type": "timeseries",
       "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
       "targets": [
-        {"expr": "pg_pool_acquired_conns{db_name=~\"$db_name\"}", "legendFormat": "acquired"},
-        {"expr": "pg_pool_idle_conns{db_name=~\"$db_name\"}", "legendFormat": "idle"},
-        {"expr": "pg_pool_constructing_conns{db_name=~\"$db_name\"}", "legendFormat": "constructing"}
+        {
+          "expr": "pg_pool_acquired_conns{db_name=~\"$db_name\", client_pool_name=~\"$client_pool_name\"}",
+          "legendFormat": "{{db_name}} - {{client_pool_name}} acquired"
+        },
+        {
+          "expr": "pg_pool_idle_conns{db_name=~\"$db_name\", client_pool_name=~\"$client_pool_name\"}",
+          "legendFormat": "{{db_name}} - {{client_pool_name}} idle"
+        },
+        {
+          "expr": "pg_pool_constructing_conns{db_name=~\"$db_name\", client_pool_name=~\"$client_pool_name\"}",
+          "legendFormat": "{{db_name}} - {{client_pool_name}} constructing"
+        }
       ],
       "fieldConfig": {"defaults": {"unit": "short", "min": 0}},
       "options": {"stacking": {"mode": "normal"}}
@@ -72,7 +95,10 @@
       "type": "timeseries",
       "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
       "targets": [
-        {"expr": "rate(pg_pool_acquire_total{db_name=~\"$db_name\"}[1m])", "legendFormat": "{{db_name}}"}
+        {
+          "expr": "sum by (client_pool_name, db_name) (rate(pg_pool_acquire_total{db_name=~\"$db_name\", client_pool_name=~\"$client_pool_name\"}[1m]))",
+          "legendFormat": "{{db_name}} - {{client_pool_name}}"
+        }
       ],
       "fieldConfig": {"defaults": {"unit": "cps", "min": 0}}
     },
@@ -82,8 +108,8 @@
       "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
       "targets": [
         {
-          "expr": "rate(pg_pool_acquire_duration_seconds_total{db_name=~\"$db_name\"}[1m]) / rate(pg_pool_acquire_total{db_name=~\"$db_name\"}[1m])",
-          "legendFormat": "{{db_name}}"
+          "expr": "sum by (client_pool_name, db_name) (rate(pg_pool_acquire_duration_seconds_total{db_name=~\"$db_name\", client_pool_name=~\"$client_pool_name\"}[1m])) / sum by (client_pool_name, db_name) (rate(pg_pool_acquire_total{db_name=~\"$db_name\", client_pool_name=~\"$client_pool_name\"}[1m]))",
+          "legendFormat": "{{db_name}} - {{client_pool_name}}"
         }
       ],
       "fieldConfig": {"defaults": {"unit": "s", "min": 0}}
@@ -93,7 +119,10 @@
       "type": "stat",
       "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
       "targets": [
-        {"expr": "pg_pool_acquired_conns{db_name=~\"$db_name\"}", "legendFormat": "{{db_name}}"}
+        {
+          "expr": "pg_pool_acquired_conns{db_name=~\"$db_name\", client_pool_name=~\"$client_pool_name\"}",
+          "legendFormat": "{{db_name}} - {{client_pool_name}}"
+        }
       ],
       "fieldConfig": {"defaults": {"unit": "short", "min": 0}}
     }

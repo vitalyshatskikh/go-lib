@@ -80,7 +80,9 @@ func TestNew_WithSubroutes(t *testing.T) {
 	t.Run("known subroute responds correctly", func(t *testing.T) {
 		resp, err := ts.Client().Get(ts.URL + "/api/hello")
 		require.NoError(t, err)
-		defer resp.Body.Close() // nolint: errcheck
+		defer func() {
+			_ = resp.Body.Close()
+		}()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -92,7 +94,9 @@ func TestNew_WithSubroutes(t *testing.T) {
 	t.Run("unknown subroute returns 404", func(t *testing.T) {
 		resp, err := ts.Client().Get(ts.URL + "/api/nonexistent")
 		require.NoError(t, err)
-		defer resp.Body.Close() // nolint: errcheck
+		defer func() {
+			_ = resp.Body.Close()
+		}()
 
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
@@ -137,7 +141,9 @@ func TestPingHandler_ReturnsCorrectResponse(t *testing.T) {
 
 	resp, err := ts.Client().Get(ts.URL + "/ping")
 	require.NoError(t, err)
-	defer resp.Body.Close() // nolint: errcheck
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
@@ -168,12 +174,10 @@ func TestServer_Start_WhenServerStarted_ThenServesRequests(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		startErr := srv.Start()
 		assert.NoError(t, startErr)
-	}()
+	})
 
 	require.Eventually(t, func() bool {
 		conn, dialErr := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 100*time.Millisecond)
@@ -213,11 +217,9 @@ func TestServer_StartAndShutdown_WhenServerRunning_ThenShutsDownGracefully(t *te
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_ = srv.Start()
-	}()
+	})
 
 	require.Eventually(t, func() bool {
 		conn, dialErr := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 100*time.Millisecond)
@@ -261,7 +263,9 @@ func TestNew_WithOpenAPI_WhenServerCreated_ThenServesSpecEndpoint(t *testing.T) 
 
 	resp, err := ts.Client().Get(ts.URL + "/docs/openapi.json")
 	require.NoError(t, err)
-	defer resp.Body.Close() // nolint: errcheck
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
@@ -283,7 +287,9 @@ func TestNew_WithOpenAPI_WhenServerCreated_ThenServesDocsUI(t *testing.T) {
 
 	resp, err := ts.Client().Get(ts.URL + "/docs/")
 	require.NoError(t, err)
-	defer resp.Body.Close() // nolint: errcheck
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get("Content-Type"), "text/html")
@@ -301,7 +307,9 @@ func TestNew_WithOpenAPI_WhenNoSpec_ThenDocsNotServed(t *testing.T) {
 
 	resp, err := ts.Client().Get(ts.URL + "/docs/")
 	require.NoError(t, err)
-	defer resp.Body.Close() // nolint: errcheck
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

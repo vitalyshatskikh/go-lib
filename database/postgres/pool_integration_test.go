@@ -27,6 +27,8 @@ func TestNewPGXPool_WhenConfigIsValid_ThenConfigApplied(t *testing.T) {
 		MaxConnLifetime:    30 * time.Minute,
 		MaxConnIdleTime:    5 * time.Minute,
 		HealthCheckPeriod:  30 * time.Second,
+		PingTimeout:        5 * time.Second,
+		ConnectTimeout:     10 * time.Second,
 	}
 
 	pool, err := postgres.NewPGXPool(cfg, zap.NewNop())
@@ -39,6 +41,8 @@ func TestNewPGXPool_WhenConfigIsValid_ThenConfigApplied(t *testing.T) {
 	assert.Equal(t, 30*time.Minute, c.MaxConnLifetime)
 	assert.Equal(t, 5*time.Minute, c.MaxConnIdleTime)
 	assert.Equal(t, 30*time.Second, c.HealthCheckPeriod)
+	assert.Equal(t, 5*time.Second, c.PingTimeout)
+	assert.Equal(t, 10*time.Second, c.ConnConfig.ConnectTimeout)
 }
 
 func TestNewPGXPool_WhenSlowQueryThresholdSet_ThenPoolIsCreated(t *testing.T) {
