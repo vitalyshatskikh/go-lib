@@ -175,7 +175,7 @@ func TestServer_Start_WhenServerStarted_ThenServesRequests(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		startErr := srv.Start()
+		startErr := srv.Run()
 		assert.NoError(t, startErr)
 	})
 
@@ -218,7 +218,7 @@ func TestServer_StartAndShutdown_WhenServerRunning_ThenShutsDownGracefully(t *te
 
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		_ = srv.Start()
+		_ = srv.Run()
 	})
 
 	require.Eventually(t, func() bool {

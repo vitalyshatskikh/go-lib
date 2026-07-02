@@ -27,10 +27,11 @@ const (
 // (zap request logging, Prometheus metrics, recoverer), a /ping health
 // endpoint, and optional /debug pprof when Debug is enabled.
 type Server struct {
-	apiServer   *http.Server
-	router      *chi.Mux
-	logger      *zap.Logger
-	openapiJSON []byte
+	apiServer       *http.Server
+	router          *chi.Mux
+	logger          *zap.Logger
+	openapiJSON     []byte
+	userMiddlewares []func(http.Handler) http.Handler
 }
 
 // ServerOption configures a Server during construction.
@@ -96,6 +97,7 @@ func New(cfg *config.Config, options ...ServerOption) (*Server, error) {
 		}),
 		middleware.Recoverer,
 	)
+	srv.router.Use(srv.userMiddlewares...)
 
 	srv.router.Get(pingPath, PingHandler(cfg))
 
@@ -126,9 +128,9 @@ func (s *Server) Mount(subroutes ...SubRoute) error {
 	return nil
 }
 
-// Start begins listening and serving HTTP requests. Blocks until the
-// server is shut down or a non-ErrServerClosed error occurs.
-func (s *Server) Start() error {
+// Run begins listening and serving HTTP requests. Blocks until the
+// server is shut down or an error occurs.
+func (s *Server) Run() error {
 	s.logger.Info("starting api server",
 		zap.String("addr", s.apiServer.Addr),
 	)
@@ -140,20 +142,14 @@ func (s *Server) Start() error {
 	return nil
 }
 
-// Shutdown gracefully shuts down the server with a 5-second timeout.
-// It respects the parent context deadline.
+// Shutdown gracefully shuts down the server.
 func (s *Server) Shutdown(ctx context.Context) error {
-	s.logger.Info("shutting down servers")
+	s.logger.Info("shutting down api server")
 
-	shutdownTimeout := 5 * time.Second
-	shutdownCtx, cancel := context.WithTimeout(ctx, shutdownTimeout)
-	defer cancel()
-
-	err := s.apiServer.Shutdown(shutdownCtx)
+	err := s.apiServer.Shutdown(ctx)
 	if err != nil {
 		return fmt.Errorf("shutdown error: %w", err)
 	}
 
-	s.logger.Info("servers shut down successfully")
 	return nil
 }

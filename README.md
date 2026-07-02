@@ -182,36 +182,37 @@ func main() {
 
 ## Configuration Reference
 
-| Env Var | Default | Description |
-|---|---|---|
-| `APP_NAME` | `my-app` | Service name |
-| `APP_VERSION` | `0.1.0` | Service version |
-| `APP_ENVIRONMENT` | `development` | Environment name |
-| `API_HOST` | `0.0.0.0` | HTTP server host |
-| `API_PORT` | `8080` | HTTP server port |
-| `METRICS_ENABLED` | `true` | Enable Prometheus metrics server |
-| `METRICS_HOST` | `0.0.0.0` | Metrics server host |
-| `METRICS_PORT` | `8081` | Metrics server port |
-| `METRICS_PATH` | `/metrics` | Metrics endpoint path |
-| `LOGGING_LEVEL` | `info` | Log level (debug, info, warn, error) |
-| `TELEMETRY_ENABLED` | `false` | Enable OpenTelemetry tracing |
-| `TELEMETRY_SERVICE_NAME` | `my-app` | OTLP service name |
-| `TELEMETRY_TRACING_ENDPOINT` | `localhost:4317` | OTLP gRPC endpoint |
-| `TELEMETRY_SAMPLE_RATE` | `1.0` | Trace sampling rate (0.0–1.0) |
-| `POSTGRES_DSN` | `""` | Raw DSN (overrides structured fields) |
-| `POSTGRES_HOSTS` | `localhost:15432,localhost:15433` | Comma-separated host:port list |
-| `POSTGRES_USER` | `postgres` | Database user |
-| `POSTGRES_PASSWORD` | `postgres` | Database password (masked as `SecretStr`) |
-| `POSTGRES_DATABASE` | `postgres` | Database name |
-| `POSTGRES_SSLMODE` | `prefer` | SSL mode (disable, allow, prefer, require, verify-ca, verify-full) |
-| `POSTGRES_TARGET_SESSION_ATTRS` | `primary` | Session target (primary, standby, prefer-standby) |
-| `POSTGRES_MAX_CONNS` | `10` | Max pool connections |
-| `POSTGRES_MIN_CONNS` | `0` | Min pool connections |
-| `POSTGRES_MAX_CONN_LIFETIME` | `1h` | Max connection lifetime |
-| `POSTGRES_MAX_CONN_IDLE_TIME` | `30m` | Max connection idle time |
-| `POSTGRES_HEALTH_CHECK_PERIOD` | `1m` | Health check interval |
-| `POSTGRES_SLOW_QUERY_THRESHOLD` | `0` | Slow query log threshold (0 = disabled) |
-| `DEBUG` | `false` | Enable debug endpoints (pprof) |
+| Env Var                         | Default                           | Description                                                        |
+|---------------------------------|-----------------------------------|--------------------------------------------------------------------|
+| `APP_NAME`                      | `my-app`                          | Service name                                                       |
+| `APP_VERSION`                   | `0.1.0`                           | Service version                                                    |
+| `APP_ENVIRONMENT`               | `development`                     | Environment name                                                   |
+| `API_HOST`                      | `0.0.0.0`                         | HTTP server host                                                   |
+| `API_PORT`                      | `8080`                            | HTTP server port                                                   |
+| `METRICS_ENABLED`               | `true`                            | Enable Prometheus metrics server                                   |
+| `METRICS_HOST`                  | `0.0.0.0`                         | Metrics server host                                                |
+| `METRICS_PORT`                  | `8081`                            | Metrics server port                                                |
+| `METRICS_PATH`                  | `/metrics`                        | Metrics endpoint path                                              |
+| `LOGGING_LEVEL`                 | `info`                            | Log level (debug, info, warn, error)                               |
+| `LOGGING_ADD_CALLER`            | `false`                           | Annotate log message with the filename, line and function name     |
+| `TELEMETRY_ENABLED`             | `false`                           | Enable OpenTelemetry tracing                                       |
+| `TELEMETRY_SERVICE_NAME`        | `my-app`                          | OTLP service name                                                  |
+| `TELEMETRY_TRACING_ENDPOINT`    | `localhost:4317`                  | OTLP gRPC endpoint                                                 |
+| `TELEMETRY_SAMPLE_RATE`         | `1.0`                             | Trace sampling rate (0.0–1.0)                                      |
+| `POSTGRES_DSN`                  | `""`                              | Raw DSN (overrides structured fields)                              |
+| `POSTGRES_HOSTS`                | `localhost:15432,localhost:15433` | Comma-separated host:port list                                     |
+| `POSTGRES_USER`                 | `postgres`                        | Database user                                                      |
+| `POSTGRES_PASSWORD`             | `postgres`                        | Database password (masked as `SecretStr`)                          |
+| `POSTGRES_DATABASE`             | `postgres`                        | Database name                                                      |
+| `POSTGRES_SSLMODE`              | `prefer`                          | SSL mode (disable, allow, prefer, require, verify-ca, verify-full) |
+| `POSTGRES_TARGET_SESSION_ATTRS` | `primary`                         | Session target (primary, standby, prefer-standby)                  |
+| `POSTGRES_MAX_CONNS`            | `10`                              | Max pool connections                                               |
+| `POSTGRES_MIN_CONNS`            | `0`                               | Min pool connections                                               |
+| `POSTGRES_MAX_CONN_LIFETIME`    | `1h`                              | Max connection lifetime                                            |
+| `POSTGRES_MAX_CONN_IDLE_TIME`   | `30m`                             | Max connection idle time                                           |
+| `POSTGRES_HEALTH_CHECK_PERIOD`  | `1m`                              | Health check interval                                              |
+| `POSTGRES_SLOW_QUERY_THRESHOLD` | `0`                               | Slow query log threshold (0 = disabled)                            |
+| `DEBUG`                         | `false`                           | Enable debug endpoints (pprof)                                     |
 
 ## View Metrics and Traces
 

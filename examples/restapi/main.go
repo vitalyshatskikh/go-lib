@@ -1,3 +1,6 @@
+// Command restapi is an example REST API server that demonstrates
+// full integration of config, observability, closer, REST API server,
+// and PostgreSQL pool packages.
 package main
 
 import (
@@ -83,6 +86,7 @@ func run(cfg *config.Config, logger *zap.Logger) error {
 
 	handler := NewHandler(&PGRepository{Pool: pool})
 	err = srv.Mount(
+		restapi.SubRoute{Prefix: "/", Handler: http.RedirectHandler("/docs", http.StatusFound)},
 		restapi.SubRoute{Prefix: "/api", Handler: http.StripPrefix("/api", handler)},
 	)
 	if err != nil {
@@ -92,7 +96,7 @@ func run(cfg *config.Config, logger *zap.Logger) error {
 	stop := make(chan struct{}, 1)
 	go func() {
 		logger.Info("starting api server")
-		if err := srv.Start(); err != nil {
+		if err := srv.Run(); err != nil {
 			logger.Error("api server error", zap.Error(err))
 		}
 		close(stop)

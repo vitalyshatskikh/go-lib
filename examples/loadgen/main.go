@@ -1,3 +1,6 @@
+// Command loadgen is an HTTP load generator that sends requests at a
+// configured rate to a target URL and reports success/failure stats and
+// latency percentiles.
 package main
 
 import (

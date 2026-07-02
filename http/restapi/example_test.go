@@ -2,7 +2,6 @@ package restapi
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -37,7 +36,7 @@ func Example() {
 
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-		if err := srv.Start(); err != nil && errors.Is(err, http.ErrServerClosed) {
+		if err := srv.Run(); err != nil {
 			fmt.Println(err)
 		}
 	})
@@ -65,8 +64,7 @@ func Example() {
 	// {"level":"info","msg":"enabling openapi endpoint"}
 	// {"level":"info","msg":"starting api server","addr":"localhost:18080"}
 	// {"level":"info","msg":"GET /docs","time":"<time>","latency":"<elapsed>","remote_ip":"","host":"localhost:18080","method":"GET","uri":"/docs","status":200,"size":"<size>","user_agent":"Go-http-client/1.1","trace_id":""}
-	// {"level":"info","msg":"shutting down servers"}
-	// {"level":"info","msg":"servers shut down successfully"}
+	// {"level":"info","msg":"shutting down api server"}
 }
 
 func newExampleLogger() *zap.Logger {

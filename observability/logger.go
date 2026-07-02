@@ -41,7 +41,7 @@ func InitLogger(cfg *config.Config) (*zap.Logger, error) {
 		level,
 	)
 
-	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+	logger := zap.New(core, zap.WithCaller(cfg.Logging.AddCaller), zap.AddStacktrace(zapcore.ErrorLevel))
 
 	return logger, nil
 }

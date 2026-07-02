@@ -2,6 +2,7 @@ package restapi
 
 import (
 	"io"
+	"net/http"
 
 	"go.uber.org/zap"
 )
@@ -25,6 +26,16 @@ func WithOpenAPI(spec io.Reader) ServerOption {
 			return err
 		}
 		s.openapiJSON = jsonSpec
+		return nil
+	}
+}
+
+// WithMiddleWares appends user-defined HTTP middlewares to the server's
+// middleware stack. They run after the built-in middlewares (logging,
+// metrics, tracing, recoverer).
+func WithMiddleWares(mws ...func(http.Handler) http.Handler) ServerOption {
+	return func(srv *Server) error {
+		srv.userMiddlewares = append(srv.userMiddlewares, mws...)
 		return nil
 	}
 }

@@ -1,8 +1,6 @@
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
-API_CONFIG_PATH=$(shell pwd)/local.yml
-
 .PHONY: setup-tools
 #? setup-tools: Install dev tools
 setup-tools:

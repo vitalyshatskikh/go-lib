@@ -37,7 +37,8 @@ type MetricsConfig struct {
 }
 
 type LoggingConfig struct {
-	Level string `env:"LEVEL" env-default:"info"`
+	Level     string `env:"LEVEL" env-default:"info"`
+	AddCaller bool   `env:"ADD_CALLER" env-default:"false"`
 }
 
 type TelemetryConfig struct {
