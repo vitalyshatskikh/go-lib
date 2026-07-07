@@ -13,6 +13,7 @@ type Config struct {
 	Metrics   MetricsConfig   `env-prefix:"METRICS_"`
 	Logging   LoggingConfig   `env-prefix:"LOGGING_"`
 	Telemetry TelemetryConfig `env-prefix:"TELEMETRY_"`
+	Sentry    SentryConfig    `env-prefix:"SENTRY_"`
 	Debug     bool            `env:"DEBUG" env-default:"false"`
 
 	Postgres PostgresConfig `env-prefix:"POSTGRES_"`
@@ -48,8 +49,17 @@ type TelemetryConfig struct {
 	SampleRate      float64 `env:"SAMPLE_RATE" env-default:"1.0"`
 }
 
+type SentryConfig struct {
+	DSN          SecretURL     `env:"DSN" env-default:""`
+	Levels       []string      `env:"LEVELS" env-default:"warn,error"`
+	SampleRate   float64       `env:"SAMPLE_RATE" env-default:"1.0"`
+	FlushTimeout time.Duration `env:"FLUSH_TIMEOUT" env-default:"5s"`
+	// Debug Sentry SDK
+	Debug bool `env:"DEBUG" env-default:"false"`
+}
+
 type PostgresConfig struct {
-	DSN string `env:"DSN" env-default:""`
+	DSN SecretStr `env:"DSN" env-default:""`
 
 	Hosts    []string  `env:"HOSTS" env-default:"localhost:15432,localhost:15433"`
 	User     string    `env:"USER" env-default:"postgres"`
@@ -96,7 +106,7 @@ type PostgresConfig struct {
 
 func (c *PostgresConfig) ConnString() string {
 	if c.DSN != "" {
-		return c.DSN
+		return c.DSN.SecretValue()
 	}
 
 	hosts := c.Hosts
@@ -121,7 +131,7 @@ func (c *PostgresConfig) ConnString() string {
 	}
 	if c.User != "" {
 		if c.Password != "" {
-			u.User = url.UserPassword(c.User, c.Password.Value())
+			u.User = url.UserPassword(c.User, c.Password.SecretValue())
 		} else {
 			u.User = url.User(c.User)
 		}

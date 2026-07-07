@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -24,6 +25,9 @@ import (
 	"github.com/vitalyshatskikh/go-lib/database/postgres"
 	"github.com/vitalyshatskikh/go-lib/http/restapi"
 	"github.com/vitalyshatskikh/go-lib/observability"
+	"github.com/vitalyshatskikh/go-lib/observability/sentry"
+	sentryhttp "github.com/vitalyshatskikh/go-lib/observability/sentry/http"
+	sentryzap "github.com/vitalyshatskikh/go-lib/observability/sentry/zap"
 )
 
 //go:embed openapi.yml
@@ -51,6 +55,8 @@ func main() {
 func run(cfg *config.Config, logger *zap.Logger) error {
 	logger.Info("starting service...")
 
+	// ---- Setup infra ----
+
 	ctx := context.Background()
 	c := closer.New(5 * time.Second) // 5 sec to shutdown
 	defer func() {
@@ -73,18 +79,36 @@ func run(cfg *config.Config, logger *zap.Logger) error {
 	}
 	c.Add(shutdownMetrics)
 
-	srv, err := restapi.New(cfg, restapi.WithLogger(logger), restapi.WithOpenAPI(bytes.NewReader(openapiYML)))
+	shutdownSentry, err := sentry.InitSentry(cfg, logger)
+	if err != nil {
+		return fmt.Errorf("failed to initialize sentry: %w", err)
+	}
+	c.Add(shutdownSentry)
+
+	srv, err := restapi.New(
+		cfg,
+		restapi.WithLogger(logger),
+		restapi.WithOpenAPI(bytes.NewReader(openapiYML)),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create server: %w", err)
 	}
 	c.Add(srv.Shutdown)
+
+	// ---- Setup application ----
+
+	logger = sentryzap.WrapLogger(cfg, logger)
 
 	pool, err := postgres.NewPGXPool(cfg.Postgres, logger)
 	if err != nil {
 		return fmt.Errorf("failed to create db pool: %w", err)
 	}
 
-	handler := NewHandler(&PGRepository{Pool: pool})
+	repo := &PGRepository{Pool: pool}
+	c.Add(repo.Close)
+
+	handler := sentryhttp.WrapHandler(cfg, NewHandler(repo, logger))
+
 	err = srv.Mount(
 		restapi.SubRoute{Prefix: "/", Handler: http.RedirectHandler("/docs", http.StatusFound)},
 		restapi.SubRoute{Prefix: "/api", Handler: http.StripPrefix("/api", handler)},
@@ -92,6 +116,8 @@ func run(cfg *config.Config, logger *zap.Logger) error {
 	if err != nil {
 		return fmt.Errorf("failed to mount routes: %w", err)
 	}
+
+	// ---- Run application ----
 
 	stop := make(chan struct{}, 1)
 	go func() {
@@ -112,7 +138,7 @@ func run(cfg *config.Config, logger *zap.Logger) error {
 	return nil
 }
 
-func NewHandler(repo Repository) http.Handler {
+func NewHandler(repo Repository, logger *zap.Logger) http.Handler {
 	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	mux := http.NewServeMux()
@@ -122,10 +148,12 @@ func NewHandler(repo Repository) http.Handler {
 
 		x := randomizer.Intn(100)
 		if x < 1 {
+			logger.Error("smth fail", zap.Error(errors.New("internal error")))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		if x < 10 {
+			logger.Error("bad request", zap.Error(errors.New("validation error")))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -137,6 +165,25 @@ func NewHandler(repo Repository) http.Handler {
 
 		w.WriteHeader(http.StatusOK)
 		_, _ = fmt.Fprintf(w, "Hello, %s!", name)
+	})
+
+	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
+		d := randomizer.Intn(1000)
+		time.Sleep(time.Duration(d) * time.Millisecond)
+
+		err := fmt.Errorf("internal error: %w", errors.New("root cause"))
+
+		// report an issue
+		sentry.CaptureError(r.Context(), err)
+
+		w.WriteHeader(http.StatusInternalServerError)
+	})
+
+	mux.HandleFunc("/panic", func(w http.ResponseWriter, r *http.Request) {
+		d := randomizer.Intn(1000)
+		time.Sleep(time.Duration(d) * time.Millisecond)
+
+		panic("mock panic")
 	})
 
 	return mux

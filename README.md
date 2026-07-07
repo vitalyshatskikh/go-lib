@@ -2,6 +2,7 @@
 
 [![codecov](https://codecov.io/gh/vitalyshatskikh/go-lib/branch/main/graph/badge.svg)](https://codecov.io/gh/vitalyshatskikh/go-lib)
 [![Go](https://img.shields.io/github/go-mod/go-version/vitalyshatskikh/go-lib)](https://github.com/vitalyshatskikh/go-lib)
+[![Go Reference](https://pkg.go.dev/badge/github.com/vitalyshatskikh/go-lib.svg)](https://pkg.go.dev/github.com/vitalyshatskikh/go-lib)
 
 Shared Go library providing common utilities for Go services: environment-based configuration, graceful shutdown, structured logging, Prometheus metrics, OpenTelemetry tracing, a chi-based HTTP server, and PostgreSQL connection pooling with observability.
 
@@ -34,7 +35,7 @@ go get github.com/vitalyshatskikh/go-lib
 
 Application configuration loaded from environment variables using `cleanenv` struct tags. Sub-configs use env prefixes (`APP_`, `API_`, `METRICS_`, `LOGGING_`, `TELEMETRY_`, `POSTGRES_`) with sensible defaults.
 
-Includes `SecretStr` — a string type that masks its value in logs and serialization (`"******"`) while exposing the actual value via `.Value()`.
+Includes `SecretStr` — a string type that masks its value in logs and serialization (`"xxxxxx"`) while exposing the actual value via `.Value()`.
 
 ```go
 cfg, err := config.Load()
@@ -67,6 +68,50 @@ Factory functions to initialize observability subsystems. Each returns a shutdow
 logger, _ := observability.InitLogger(cfg)
 metricsCleanup, _ := observability.InitMetrics(cfg, logger)
 telemetryCleanup, _ := observability.InitTelemetry(ctx, cfg, logger)
+```
+
+### `observability/sentry`
+
+Optional Sentry error tracking integration. Initializes the Sentry SDK, provides HTTP panic recovery middleware, and a zap logger wrapper that forwards log entries to Sentry.
+
+`InitSentry(cfg, logger)` — initializes the Sentry SDK with the configured DSN, environment, release, and sample rate. Returns a shutdown function that flushes buffered events before exit. No-op when `SENTRY_DSN` is empty.
+
+`CaptureError(ctx, err)` — captures an error as a Sentry event using the hub from the request context (injected by the HTTP middleware).
+
+```go
+sentryCleanup, err := sentry.InitSentry(cfg, logger)
+if err != nil {
+    logger.Fatal("failed to init sentry", zap.Error(err))
+}
+defer sentryCleanup(context.Background())
+
+sentry.CaptureError(ctx, err)
+```
+
+#### `observability/sentry/http`
+
+HTTP middleware that wraps an `http.Handler` with Sentry panic recovery and error reporting:
+
+```go
+handler := sentryhttp.WrapHandler(cfg, myHandler)
+```
+
+#### `observability/sentry/zap`
+
+Wraps a `*zap.Logger` with a Sentry core that forwards log entries at the configured levels (default: `warn`, `error`) to Sentry:
+
+```go
+logger = sentryzap.WrapLogger(cfg, logger)
+```
+
+#### `observability/sentry/mock`
+
+Test helper that runs a local HTTP server acting as a Sentry endpoint. Records incoming requests for assertions — useful for integration tests without a real Sentry account:
+
+```go
+ms, cleanup := mock.RunMockSentry("test-key", "test-project")
+defer cleanup()
+cfg.Sentry.DSN = config.SecretURL(ms.DSN)
 ```
 
 ### `http/restapi`
@@ -212,6 +257,11 @@ func main() {
 | `POSTGRES_MAX_CONN_IDLE_TIME`   | `30m`                             | Max connection idle time                                           |
 | `POSTGRES_HEALTH_CHECK_PERIOD`  | `1m`                              | Health check interval                                              |
 | `POSTGRES_SLOW_QUERY_THRESHOLD` | `0`                               | Slow query log threshold (0 = disabled)                            |
+| `SENTRY_DSN`                    | `""`                              | Sentry DSN (empty = disabled)                                      |
+| `SENTRY_LEVELS`                 | `warn,error`                      | Log levels forwarded to Sentry (comma-separated)                   |
+| `SENTRY_SAMPLE_RATE`            | `1.0`                             | Sentry trace sample rate (0.0–1.0)                                 |
+| `SENTRY_FLUSH_TIMEOUT`          | `5s`                              | Max time to wait for Sentry event delivery on shutdown             |
+| `SENTRY_DEBUG`                  | `false`                           | Enable Sentry SDK debug logging                                    |
 | `DEBUG`                         | `false`                           | Enable debug endpoints (pprof)                                     |
 
 ## View Metrics and Traces
@@ -235,6 +285,8 @@ Four dashboards are mounted into Grafana automatically:
 
 [`examples/loadgen/`](examples/loadgen/) is a configurable HTTP load generator that sends requests to a target URL at a given rate and reports live latency stats.
 
+[`examples/sentry-mock/`](examples/sentry-mock/) is a lightweight Sentry envelope mock server that accepts events from the Sentry SDK and logs them to stdout — useful for local development without a real Sentry account.
+
 ### Running the Stack
 
 ```shell
@@ -245,8 +297,9 @@ This starts:
 1. **postgres-primary** — primary PostgreSQL on `:15432` (WAL-configured for replication)
 2. **postgres-replica** — streaming replica on `:15433`
 3. **otel-lgtm** — the observability backend (Grafana at `http://localhost:13000`)
-4. **restapi** — the example service on `:18080` (API) and `:18081` (metrics)
-5. **loadgen** — sends 3 RPS to `/api/hello` for 10 minutes
+4. **restapi** — the example service on `:18080` (API) and `:18081` (metrics), with Sentry events sent to the mock
+5. **sentry-mock** — accepts and logs Sentry error events (`:19000`)
+6. **loadgen** — sends 3 RPS to `/api/hello` for 10 minutes
 
 Open Grafana at `http://localhost:13000` (anonymous login enabled). Navigate to **Dashboards** to view the four custom dashboards. Traces appear in the **Service Traces** dashboard or under **Explore > Tempo**.
 
