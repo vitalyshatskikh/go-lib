@@ -67,3 +67,32 @@ func TestInitTelemetry_WhenSampleRateAbove1_ThenReturnsError(t *testing.T) {
 	assert.Nil(t, shutdown)
 	assert.Contains(t, err.Error(), "sample rate must be in [0.0, 1.0]")
 }
+
+func TestInitTelemetry_WhenEmptyEndpoint_ThenCreatesTpWithoutExporter(t *testing.T) {
+	cfg := &config.Config{
+		App: config.AppConfig{Name: "test", Version: "1.0.0"},
+		Telemetry: config.TelemetryConfig{
+			Enabled:         true,
+			SampleRate:      1.0,
+			TracingEndpoint: "",
+		},
+	}
+
+	shutdown, err := InitTelemetry(context.Background(), cfg, zap.NewNop())
+
+	require.NoError(t, err)
+	require.NotNil(t, shutdown)
+	// TP should exist and be the global provider
+	tp := GetTelemetryProvider()
+	require.NotNil(t, tp)
+	assert.NoError(t, shutdown(context.Background()))
+}
+
+func TestGetTelemetryProvider_WhenNotInitialized_ThenReturnsNil(t *testing.T) {
+	// Reset the global var (hack for test)
+	globalTracerProvider = nil
+
+	tp := GetTelemetryProvider()
+
+	assert.Nil(t, tp)
+}

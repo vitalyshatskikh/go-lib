@@ -14,7 +14,7 @@ import (
 // WarnLevel and ErrorLevel log entries to Sentry. If cfg.Sentry.Dsn is empty,
 // the logger is returned unchanged.
 func WrapLogger(cfg *config.Config, logger *zap.Logger) *zap.Logger {
-	if cfg.Sentry.DSN == "" {
+	if cfg.Sentry.DSN.SecretValue() == "" {
 		return logger
 	}
 

@@ -50,10 +50,11 @@ type TelemetryConfig struct {
 }
 
 type SentryConfig struct {
-	DSN          SecretURL     `env:"DSN" env-default:""`
-	Levels       []string      `env:"LEVELS" env-default:"warn,error"`
-	SampleRate   float64       `env:"SAMPLE_RATE" env-default:"1.0"`
-	FlushTimeout time.Duration `env:"FLUSH_TIMEOUT" env-default:"5s"`
+	DSN           SecretURL     `env:"DSN" env-default:""`
+	Levels        []string      `env:"LEVELS" env-default:"warn,error"`
+	SampleRate    float64       `env:"SAMPLE_RATE" env-default:"1.0"`
+	FlushTimeout  time.Duration `env:"FLUSH_TIMEOUT" env-default:"5s"`
+	EnableTracing bool          `env:"ENABLE_TRACING" env-default:"false"`
 	// Debug Sentry SDK
 	Debug bool `env:"DEBUG" env-default:"false"`
 }

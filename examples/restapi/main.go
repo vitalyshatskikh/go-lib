@@ -79,7 +79,7 @@ func run(cfg *config.Config, logger *zap.Logger) error {
 	}
 	c.Add(shutdownMetrics)
 
-	shutdownSentry, err := sentry.InitSentry(cfg, logger)
+	shutdownSentry, err := sentry.InitSentry(ctx, cfg, logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize sentry: %w", err)
 	}

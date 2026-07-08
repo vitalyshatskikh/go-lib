@@ -49,6 +49,36 @@ paths:
         "500":
           description: Internal server error (random simulation)
 
+  /api/error:
+    get:
+      summary: Simulate an error
+      description: |
+        Simulates random latency (0–999 ms) and returns a 500 Internal
+        Server Error. The error is also reported to Sentry.
+      operationId: simulateError
+      tags:
+        - api
+      responses:
+        "500":
+          description: Internal server error (reported to Sentry)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/panic:
+    get:
+      summary: Simulate a panic
+      description: |
+        Simulates random latency (0–999 ms) and panics to demonstrate
+        the server's panic recovery middleware.
+      operationId: simulatePanic
+      tags:
+        - api
+      responses:
+        "500":
+          description: Internal server error (panic recovered)
+
 components:
   schemas:
     PingResponse:

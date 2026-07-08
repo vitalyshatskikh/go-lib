@@ -13,6 +13,10 @@ github.com/exaring/otelpgx v0.11.1 h1:pE79fIg/qh/Lpu00kvswFC5dKfqyJJhMJ4Y4N3w5Lj
 github.com/exaring/otelpgx v0.11.1/go.mod h1:3OojrUKhhy3lTbYIMBijP3YjMey/jo14eHAW5cXcUdk=
 github.com/getsentry/sentry-go v0.47.0 h1:AnSMSyrYA5qZCIN/2xpgAAwv63sVULV+vBq37ajouc8=
 github.com/getsentry/sentry-go v0.47.0/go.mod h1:h+b4VHpKnK7aUXB5wc+KDnPgp9ZtfliRD4eV85FbiSA=
+github.com/getsentry/sentry-go/otel v0.47.0 h1:0LwN6BQR5tQQgaSruxEuFNKQlt+bS1D4HgfbFkSo800=
+github.com/getsentry/sentry-go/otel v0.47.0/go.mod h1:JrF+DAQp1h0+wAmAb8HN4hHBWPnKJ4btiZr0NU7pEVw=
+github.com/getsentry/sentry-go/otel/otlp v0.47.0 h1:SVrisfuYZ4yS/K977VXwRjzUokoM9mW5sXCvlS+h5pY=
+github.com/getsentry/sentry-go/otel/otlp v0.47.0/go.mod h1:T42drgCERAt3rYd2OZTuk/Qk0oJFMcPQ5mmJwjYeWto=
 github.com/getsentry/sentry-go/zap v0.47.0 h1:FFrIflK2YPkfZf7GW7DA2mf+Dc0vIzbMlhWIYFuNvI8=
 github.com/getsentry/sentry-go/zap v0.47.0/go.mod h1:0jtAIInsZ0HUMFeSb38IMD7LjqP5XQoJ635KD7/pkSc=
 github.com/go-chi/chi/v5 v5.3.0 h1:halUjDxhshgXHMrao5bB8eNBXo/rnzwr8m5m36glehM=
@@ -88,6 +92,8 @@ go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.44.0 h1:4YsVu3B8+3qtWYYrsUY
 go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.44.0/go.mod h1:+wnlSn0mD1ADVMe3v9Z/WIaiz6q6gL2J/ejaAmdmv80=
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.44.0 h1:qazEJlUOQzhCpzQpFETGby7EdqjI1wsd0W+6Gg1SCTU=
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.44.0/go.mod h1:fOD2Yefuxixkx3ahVNf0O/PERb6r4OlbxfATVnYvzCo=
+go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.43.0 h1:3iZJKlCZufyRzPzlQhUIWVmfltrXuGyfjREgGP3UUjc=
+go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.43.0/go.mod h1:/G+nUPfhq2e+qiXMGxMwumDrP5jtzU+mWN7/sjT2rak=
 go.opentelemetry.io/otel/metric v1.44.0 h1:1w0gILTcHdr3YI+ixLyjemwrVnsMURbTZFrSYCdDdmc=
 go.opentelemetry.io/otel/metric v1.44.0/go.mod h1:8O7hanEPBNgEMmybD3s2VBKcgWOCsA6tzHBPODAiquo=
 go.opentelemetry.io/otel/sdk v1.44.0 h1:nHYwb9lK+fJPU/dnT6s7W7Z8itMWyqrnVfbheVYrZ58=

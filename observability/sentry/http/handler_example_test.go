@@ -25,7 +25,7 @@ func ExampleWrapHandler() {
 		},
 	}
 
-	stopSentry, err := sentry.InitSentry(cfg, zap.NewNop())
+	stopSentry, err := sentry.InitSentry(context.Background(), cfg, zap.NewNop())
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -42,7 +42,7 @@ func ExampleWrapHandler() {
 	wrapped.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
 	body, _ := io.ReadAll(rr.Body)
 
-	_ = ms.WaitCalled(1, time.Second)
+	_ = ms.WaitCalled(1, 100*time.Millisecond)
 	_ = stopSentry(context.Background())
 
 	fmt.Printf("body: %s\n", body)
@@ -61,7 +61,7 @@ func ExampleWrapHandler_emptyDsn() {
 		Sentry: config.SentryConfig{},
 	}
 
-	stopSentry, err := sentry.InitSentry(cfg, zap.NewNop())
+	stopSentry, err := sentry.InitSentry(context.Background(), cfg, zap.NewNop())
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -78,7 +78,6 @@ func ExampleWrapHandler_emptyDsn() {
 	wrapped.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
 	body, _ := io.ReadAll(rr.Body)
 
-	_ = ms.WaitCalled(1, time.Second)
 	_ = stopSentry(context.Background())
 
 	fmt.Printf("body: %s\n", body)

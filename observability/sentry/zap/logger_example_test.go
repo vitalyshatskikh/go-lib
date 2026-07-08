@@ -22,7 +22,7 @@ func ExampleWrapLogger() {
 		},
 	}
 
-	stopSentry, err := sentry.InitSentry(cfg, zap.NewNop())
+	stopSentry, err := sentry.InitSentry(context.Background(), cfg, zap.NewNop())
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -50,7 +50,7 @@ func ExampleWrapLogger_empty_dsn() {
 	logger := zap.NewExample()
 	cfg := &config.Config{}
 
-	stopSentry, err := sentry.InitSentry(cfg, zap.NewNop())
+	stopSentry, err := sentry.InitSentry(context.Background(), cfg, zap.NewNop())
 	if err != nil {
 		fmt.Println(err)
 		return
