@@ -14,7 +14,6 @@ services:
       - LOGGING_ADD_CALLER=true
       - TELEMETRY_ENABLED=true
       - TELEMETRY_TRACING_ENDPOINT=otel-lgtm:4317
-      - TELEMETRY_SERVICE_NAME=restapi-example
       - POSTGRES_DSN=postgres://postgres:postgres@postgres-primary:5432,postgres-replica:5432/postgres?target_session_attrs=prefer-standby
       - POSTGRES_POOL_NAME=postgres-prefer-standby
       - SENTRY_DSN=http://public@sentry-mock:19000/restapi

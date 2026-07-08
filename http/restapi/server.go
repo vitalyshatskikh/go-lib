@@ -88,15 +88,18 @@ func New(cfg *config.Config, options ...ServerOption) (*Server, error) {
 
 	srv.router.NotFound(NotFoundHandler)
 	srv.router.MethodNotAllowed(MethodNotAllowedHandler)
-	srv.router.Use(
-		middleware.RequestLogger(LogFormatter{Logger: srv.logger, Skip: skipFn}),
-		middlewares.NewPrometheusMiddleware(middlewares.PrometheusMiddlewareConfig{Skip: skipFn}),
-		middlewares.NewOtelTracingMiddleware(middlewares.OtelTracingMiddlewareConfig{
-			ServiceName: cfg.Telemetry.ServiceName,
+
+	srv.router.Use(middleware.RequestLogger(LogFormatter{Logger: srv.logger, Skip: skipFn}))
+	if cfg.Metrics.Enabled {
+		srv.router.Use(middlewares.NewPrometheusMiddleware(middlewares.PrometheusMiddlewareConfig{Skip: skipFn}))
+	}
+	if cfg.Telemetry.Enabled {
+		srv.router.Use(middlewares.NewOtelTracingMiddleware(middlewares.OtelTracingMiddlewareConfig{
+			ServiceName: cfg.App.Name,
 			Skip:        skipFn,
-		}),
-		middleware.Recoverer,
-	)
+		}))
+	}
+	srv.router.Use(middleware.Recoverer)
 	srv.router.Use(srv.userMiddlewares...)
 
 	srv.router.Get(pingPath, PingHandler(cfg))

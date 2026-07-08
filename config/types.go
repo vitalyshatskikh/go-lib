@@ -44,7 +44,6 @@ type LoggingConfig struct {
 
 type TelemetryConfig struct {
 	Enabled         bool    `env:"ENABLED" env-default:"false"`
-	ServiceName     string  `env:"SERVICE_NAME" env-default:"my-app"`
 	TracingEndpoint string  `env:"TRACING_ENDPOINT" env-default:"localhost:4317"`
 	SampleRate      float64 `env:"SAMPLE_RATE" env-default:"1.0"`
 }

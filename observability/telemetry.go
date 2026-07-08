@@ -47,7 +47,7 @@ func InitTelemetry(ctx context.Context, cfg *config.Config, logger *zap.Logger) 
 
 	res, err := resource.New(timeoutCtx,
 		resource.WithAttributes(
-			semconv.ServiceName(cfg.Telemetry.ServiceName),
+			semconv.ServiceName(cfg.App.Name),
 			semconv.ServiceVersion(cfg.App.Version),
 		),
 	)

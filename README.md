@@ -241,7 +241,6 @@ func main() {
 | `LOGGING_LEVEL`                 | `info`                            | Log level (debug, info, warn, error)                               |
 | `LOGGING_ADD_CALLER`            | `false`                           | Annotate log message with the filename, line and function name     |
 | `TELEMETRY_ENABLED`             | `false`                           | Enable OpenTelemetry tracing                                       |
-| `TELEMETRY_SERVICE_NAME`        | `my-app`                          | OTLP service name                                                  |
 | `TELEMETRY_TRACING_ENDPOINT`    | `localhost:4317`                  | OTLP gRPC endpoint                                                 |
 | `TELEMETRY_SAMPLE_RATE`         | `1.0`                             | Trace sampling rate (0.0–1.0)                                      |
 | `POSTGRES_DSN`                  | `""`                              | Raw DSN (overrides structured fields)                              |
