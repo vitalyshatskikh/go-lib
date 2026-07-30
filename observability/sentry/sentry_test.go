@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/vitalyshatskikh/go-lib/config"
@@ -72,7 +73,8 @@ func TestInitSentry_WhenEnableTracingWithoutTp_ThenReturnsError(t *testing.T) {
 }
 
 func TestInitSentry_WhenEnableTracingWithTp_ThenReturnsShutdown(t *testing.T) {
-	t.Cleanup(observability.ResetTelemetryProvider)
+	tp := otel.GetTracerProvider()
+	t.Cleanup(func() { otel.SetTracerProvider(tp) })
 
 	_, err := observability.InitTelemetry(context.Background(), &config.Config{
 		App: config.AppConfig{Name: "test", Version: "1.0.0"},

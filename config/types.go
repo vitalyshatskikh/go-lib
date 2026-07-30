@@ -43,17 +43,24 @@ type LoggingConfig struct {
 }
 
 type TelemetryConfig struct {
-	Enabled         bool    `env:"ENABLED" env-default:"false"`
-	TracingEndpoint string  `env:"TRACING_ENDPOINT" env-default:"localhost:4317"`
-	SampleRate      float64 `env:"SAMPLE_RATE" env-default:"1.0"`
+	Enabled         bool          `env:"ENABLED" env-default:"false"`
+	TracingEndpoint string        `env:"TRACING_ENDPOINT" env-default:"localhost:4317"`
+	SampleRate      float64       `env:"SAMPLE_RATE" env-default:"1.0"`
+	UseTLS          bool          `env:"USE_TLS" env-default:"false"`
+	SkipVerifyCA    bool          `env:"SKIP_VERIFY_CA" env-default:"false"`
+	CACertPath      string        `env:"CA_CERT_PATH" env-default:""`
+	ConnectTimeout  time.Duration `env:"CONNECT_TIMEOUT" env-default:"10s"`
 }
 
 type SentryConfig struct {
-	DSN           SecretURL     `env:"DSN" env-default:""`
-	Levels        []string      `env:"LEVELS" env-default:"warn,error"`
-	SampleRate    float64       `env:"SAMPLE_RATE" env-default:"1.0"`
-	FlushTimeout  time.Duration `env:"FLUSH_TIMEOUT" env-default:"5s"`
-	EnableTracing bool          `env:"ENABLE_TRACING" env-default:"false"`
+	DSN          SecretURL     `env:"DSN" env-default:""`
+	Levels       []string      `env:"LEVELS" env-default:"warn,error"`
+	SampleRate   float64       `env:"SAMPLE_RATE" env-default:"1.0"`
+	FlushTimeout time.Duration `env:"FLUSH_TIMEOUT" env-default:"5s"`
+	// EnableTracing enables OpenTelemetry tracing via Sentry's OTLP exporter.
+	// Requires TelemetryConfig.Enabled=true and InitTelemetry called before InitSentry.
+	// TracingEndpoint may be empty — traces will be sent to Sentry only.
+	EnableTracing bool `env:"ENABLE_TRACING" env-default:"false"`
 	// Debug Sentry SDK
 	Debug bool `env:"DEBUG" env-default:"false"`
 }

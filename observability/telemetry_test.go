@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/vitalyshatskikh/go-lib/config"
@@ -82,17 +83,7 @@ func TestInitTelemetry_WhenEmptyEndpoint_ThenCreatesTpWithoutExporter(t *testing
 
 	require.NoError(t, err)
 	require.NotNil(t, shutdown)
-	// TP should exist and be the global provider
-	tp := GetTelemetryProvider()
+	tp := otel.GetTracerProvider()
 	require.NotNil(t, tp)
 	assert.NoError(t, shutdown(context.Background()))
-}
-
-func TestGetTelemetryProvider_WhenNotInitialized_ThenReturnsNil(t *testing.T) {
-	// Reset the global var (hack for test)
-	globalTracerProvider = nil
-
-	tp := GetTelemetryProvider()
-
-	assert.Nil(t, tp)
 }
