@@ -17,23 +17,11 @@ const (
 )
 
 var (
-	sizeBuckets  = []float64{1.0 * bKB, 2.0 * bKB, 5.0 * bKB, 10.0 * bKB, 100 * bKB, 500 * bKB, 1.0 * bMB, 2.5 * bMB, 5.0 * bMB, 10.0 * bMB}
-	registerOnce sync.Once
-)
+	sizeBuckets = []float64{1.0 * bKB, 2.0 * bKB, 5.0 * bKB, 10.0 * bKB, 100 * bKB, 500 * bKB, 1.0 * bMB, 2.5 * bMB, 5.0 * bMB, 10.0 * bMB}
 
-// PrometheusMiddlewareConfig configures the Prometheus HTTP metrics middleware.
-type PrometheusMiddlewareConfig struct {
-	Skip func(r *http.Request) bool
-}
+	labelNames = []string{"status_code", "method", "host", "path"}
 
-// NewPrometheusMiddleware returns net/http compatible middleware that records HTTP request
-// count, duration, request size and response size as Prometheus histograms
-// and counters, partitioned by status code, method, host, and path.
-func NewPrometheusMiddleware(conf PrometheusMiddlewareConfig) func(next http.Handler) http.Handler {
-	registerer := prometheus.DefaultRegisterer
-
-	labelNames := []string{"status_code", "method", "host", "path"}
-	requestCount := prometheus.NewCounterVec(
+	requestCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "",
 			Subsystem: "http_server",
@@ -43,20 +31,18 @@ func NewPrometheusMiddleware(conf PrometheusMiddlewareConfig) func(next http.Han
 		labelNames,
 	)
 
-	requestDuration := prometheus.NewHistogramVec(
+	requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "",
 			Subsystem: "http_server",
 			Name:      "request_duration_seconds",
 			Help:      "The HTTP request latencies in seconds.",
-			// Here, we use the prometheus defaults which are for ~10s request length max:
-			// []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10}
-			Buckets: prometheus.DefBuckets,
+			Buckets:   prometheus.DefBuckets,
 		},
 		labelNames,
 	)
 
-	responseSize := prometheus.NewHistogramVec(
+	responseSize = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "",
 			Subsystem: "http_server",
@@ -67,7 +53,7 @@ func NewPrometheusMiddleware(conf PrometheusMiddlewareConfig) func(next http.Han
 		labelNames,
 	)
 
-	requestSize := prometheus.NewHistogramVec(
+	requestSize = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "",
 			Subsystem: "http_server",
@@ -78,12 +64,25 @@ func NewPrometheusMiddleware(conf PrometheusMiddlewareConfig) func(next http.Han
 		labelNames,
 	)
 
+	registerOnce sync.Once
+)
+
+func registerMetrics() {
 	registerOnce.Do(func() {
-		registerer.MustRegister(requestCount)
-		registerer.MustRegister(requestDuration)
-		registerer.MustRegister(responseSize)
-		registerer.MustRegister(requestSize)
+		prometheus.MustRegister(requestCount, requestDuration, responseSize, requestSize)
 	})
+}
+
+// PrometheusMiddlewareConfig configures the Prometheus HTTP metrics middleware.
+type PrometheusMiddlewareConfig struct {
+	Skip func(r *http.Request) bool
+}
+
+// NewPrometheusMiddleware returns net/http compatible middleware that records HTTP request
+// count, duration, request size and response size as Prometheus histograms
+// and counters, partitioned by status code, method, host, and path.
+func NewPrometheusMiddleware(conf PrometheusMiddlewareConfig) func(next http.Handler) http.Handler {
+	registerMetrics()
 
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -92,9 +91,6 @@ func NewPrometheusMiddleware(conf PrometheusMiddlewareConfig) func(next http.Han
 				return
 			}
 
-			// Because of net/http handler signature that returns nothing
-			// we need wrap response to intercept status/size/etc.
-			// Maybe already wrapped by previous middleware (Logger)
 			ww, ok := w.(middleware.WrapResponseWriter)
 			if !ok {
 				ww = middleware.NewWrapResponseWriter(w, r.ProtoMajor)

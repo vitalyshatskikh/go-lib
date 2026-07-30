@@ -4,12 +4,13 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-
-	"github.com/prometheus/client_golang/prometheus"
 )
 
-func resetPrometheusRegistry() {
-	prometheus.DefaultRegisterer = prometheus.NewRegistry()
+func resetMetricValues() {
+	requestCount.Reset()
+	requestDuration.Reset()
+	responseSize.Reset()
+	requestSize.Reset()
 }
 
 func newGetRequest(path string) *http.Request {
