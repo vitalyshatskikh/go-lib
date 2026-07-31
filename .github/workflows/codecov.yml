@@ -37,7 +37,7 @@ jobs:
         run: gocovmerge coverage-unit.txt coverage-int.txt > coverage.txt
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           file: ./coverage.txt
           fail_ci_if_error: true
