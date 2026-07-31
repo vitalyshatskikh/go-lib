@@ -30,10 +30,10 @@ func WithOpenAPI(spec io.Reader) ServerOption {
 	}
 }
 
-// WithMiddleWares appends user-defined HTTP middlewares to the server's
+// WithMiddlewares appends user-defined HTTP middlewares to the server's
 // middleware stack. They run after the built-in middlewares (logging,
 // metrics, tracing, recoverer).
-func WithMiddleWares(mws ...func(http.Handler) http.Handler) ServerOption {
+func WithMiddlewares(mws ...func(http.Handler) http.Handler) ServerOption {
 	return func(srv *Server) error {
 		srv.userMiddlewares = append(srv.userMiddlewares, mws...)
 		return nil

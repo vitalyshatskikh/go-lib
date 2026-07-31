@@ -3,6 +3,7 @@ package restapi
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 
 	"github.com/vitalyshatskikh/go-lib/config"
 )
@@ -11,11 +12,15 @@ import (
 // name, version and hostname as JSON. Useful for health checks.
 func PingHandler(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		hostname, _ := os.Hostname()
+		if hostname == "" {
+			hostname = "undefined"
+		}
 		pong := map[string]any{
 			"status":   "available",
 			"service":  cfg.App.Name,
 			"version":  cfg.App.Version,
-			"hostname": cfg.API.Host,
+			"hostname": hostname,
 		}
 		response, err := json.Marshal(pong)
 		if err != nil {

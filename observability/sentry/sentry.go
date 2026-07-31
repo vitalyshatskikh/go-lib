@@ -7,11 +7,11 @@ import (
 	"github.com/getsentry/sentry-go"
 	sentryotel "github.com/getsentry/sentry-go/otel"
 	sentryotlp "github.com/getsentry/sentry-go/otel/otlp"
+	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 
 	"github.com/vitalyshatskikh/go-lib/config"
-	"github.com/vitalyshatskikh/go-lib/observability"
 )
 
 // InitSentry initializes the Sentry SDK with the configured DSN, environment,
@@ -29,8 +29,8 @@ func InitSentry(ctx context.Context, cfg *config.Config, logger *zap.Logger) (fu
 	}
 
 	if cfg.Sentry.EnableTracing {
-		tp := observability.GetTelemetryProvider()
-		if tp == nil {
+		tp, ok := otel.GetTracerProvider().(*sdktrace.TracerProvider)
+		if !ok || tp == nil {
 			return nil, fmt.Errorf("telemetry must be initialized before sentry when EnableTracing is true")
 		}
 

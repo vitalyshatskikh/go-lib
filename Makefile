@@ -16,6 +16,7 @@ test-unit:
 
 .PHONY: test-integration
 #? test-integration: Run integration tests (requires running Postgres)
+test-integration: export POSTGRES_HOSTS=localhost:15432,localhost:15433
 test-integration:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) gotestsum --junitfile=coverage-int.xml --jsonfile=coverage-int.json -- \
  		-tags=integration -coverprofile=coverage-int.txt -covermode atomic -race  ./database/...
@@ -29,6 +30,10 @@ fmt:
 #? lint: Run golangci-lint
 lint:
 	golangci-lint run ./...
+
+.PHONY: qa
+#? qa: All code quality tasks
+qa: fmt lint test-unit test-integration
 
 .PHONY: run-example-restapi
 #? run-example-restapi: Run golangci-lint

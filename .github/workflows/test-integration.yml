@@ -4,6 +4,9 @@ name: Run integration tests
 on:
   workflow_call:
 
+env:
+  POSTGRES_HOSTS: localhost:5432,localhost:5433
+
 jobs:
   test-integration:
     runs-on: ubuntu-latest

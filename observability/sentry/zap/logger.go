@@ -14,6 +14,9 @@ import (
 // WarnLevel and ErrorLevel log entries to Sentry. If cfg.Sentry.Dsn is empty,
 // the logger is returned unchanged.
 func WrapLogger(cfg *config.Config, logger *zap.Logger) *zap.Logger {
+	if logger == nil {
+		return nil
+	}
 	if cfg.Sentry.DSN.SecretValue() == "" {
 		return logger
 	}
@@ -22,6 +25,7 @@ func WrapLogger(cfg *config.Config, logger *zap.Logger) *zap.Logger {
 	for _, lvl := range cfg.Sentry.Levels {
 		parsed, err := zapcore.ParseLevel(lvl)
 		if err != nil {
+			logger.Warn("invalid sentry log level skipped", zap.String("level", lvl))
 			continue
 		}
 		levels = append(levels, parsed)

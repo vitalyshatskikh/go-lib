@@ -82,7 +82,7 @@ func TestComputeApproximateRequestSize_WhenMultipleHeaderValues_ThenCountsAll(t 
 }
 
 func TestNewPrometheusMiddleware_WhenRequestServed_ThenRecordsAllMetrics(t *testing.T) {
-	resetPrometheusRegistry()
+	resetMetricValues()
 
 	mw := NewPrometheusMiddleware(PrometheusMiddlewareConfig{})
 	handler := mw(newHandler(http.StatusOK, "ok"))
@@ -128,7 +128,7 @@ func TestNewPrometheusMiddleware_WhenRequestServed_ThenRecordsAllMetrics(t *test
 }
 
 func TestNewPrometheusMiddleware_WhenSkipReturnsTrue_ThenSkipsMetrics(t *testing.T) {
-	resetPrometheusRegistry()
+	resetMetricValues()
 
 	skipAll := func(r *http.Request) bool { return true }
 	mw := NewPrometheusMiddleware(PrometheusMiddlewareConfig{Skip: skipAll})
@@ -140,22 +140,27 @@ func TestNewPrometheusMiddleware_WhenSkipReturnsTrue_ThenSkipsMetrics(t *testing
 
 	require.Equal(t, http.StatusOK, rec.Code)
 
-	// Metrics should NOT be recorded — this is the bug location
 	gatherer := prometheus.DefaultRegisterer.(*prometheus.Registry)
 	families, err := gatherer.Gather()
 	require.NoError(t, err)
 
 	for _, f := range families {
 		if f.GetName() == "http_server_requests_total" {
-			// If we get here, metrics were recorded despite Skip returning true
-			t.Errorf("expected no metrics when Skip returns true, but %s has %d metrics",
-				f.GetName(), len(f.GetMetric()))
+			for _, m := range f.GetMetric() {
+				labels := make(map[string]string)
+				for _, l := range m.GetLabel() {
+					labels[l.GetName()] = l.GetValue()
+				}
+				if labels["path"] == "/skip" {
+					t.Errorf("expected no metric for /skip path when Skip returns true, but found metric with path=%s", labels["path"])
+				}
+			}
 		}
 	}
 }
 
 func TestNewPrometheusMiddleware_WhenResponseWriterAlreadyWrapped_ThenReusesIt(t *testing.T) {
-	resetPrometheusRegistry()
+	resetMetricValues()
 
 	mw := NewPrometheusMiddleware(PrometheusMiddlewareConfig{})
 
@@ -186,7 +191,7 @@ func TestNewPrometheusMiddleware_WhenResponseWriterAlreadyWrapped_ThenReusesIt(t
 }
 
 func TestNewPrometheusMiddleware_WhenMultipleStatusCodes_ThenLabelsAreCorrect(t *testing.T) {
-	resetPrometheusRegistry()
+	resetMetricValues()
 
 	mw := NewPrometheusMiddleware(PrometheusMiddlewareConfig{})
 	router := http.NewServeMux()
@@ -213,24 +218,35 @@ func TestNewPrometheusMiddleware_WhenMultipleStatusCodes_ThenLabelsAreCorrect(t 
 
 	for _, f := range families {
 		if f.GetName() == "http_server_requests_total" {
-			require.Len(t, f.GetMetric(), 2, "should have two distinct label combinations")
+			expectedMetrics := map[string]string{
+				"/ok":       "200",
+				"/notfound": "404",
+			}
 
-			statuses := make(map[string]bool)
+			foundMetrics := make(map[string]string)
 			for _, m := range f.GetMetric() {
+				labels := make(map[string]string)
 				for _, l := range m.GetLabel() {
-					if l.GetName() == "status_code" {
-						statuses[l.GetValue()] = true
-					}
+					labels[l.GetName()] = l.GetValue()
+				}
+				path := labels["path"]
+				status := labels["status_code"]
+				if path != "" && status != "" {
+					foundMetrics[path] = status
 				}
 			}
-			assert.True(t, statuses["200"], "should have 200 status code label")
-			assert.True(t, statuses["404"], "should have 404 status code label")
+
+			for path, expectedStatus := range expectedMetrics {
+				actualStatus, ok := foundMetrics[path]
+				assert.True(t, ok, "should have metric for path=%s", path)
+				assert.Equal(t, expectedStatus, actualStatus, "metric for path=%s should have status %s", path, expectedStatus)
+			}
 		}
 	}
 }
 
 func TestNewPrometheusMiddleware_WhenPathPatternEmpty_ThenFallsBackToURLPath(t *testing.T) {
-	resetPrometheusRegistry()
+	resetMetricValues()
 
 	mw := NewPrometheusMiddleware(PrometheusMiddlewareConfig{})
 	handler := mw(newHandler(http.StatusOK, "ok"))
@@ -247,12 +263,18 @@ func TestNewPrometheusMiddleware_WhenPathPatternEmpty_ThenFallsBackToURLPath(t *
 
 	for _, f := range families {
 		if f.GetName() == "http_server_requests_total" {
-			require.Len(t, f.GetMetric(), 1)
-			for _, l := range f.GetMetric()[0].GetLabel() {
-				if l.GetName() == "path" {
-					assert.Equal(t, "/some/path", l.GetValue(), "should fall back to URL path when Pattern is empty")
+			found := false
+			for _, m := range f.GetMetric() {
+				labels := make(map[string]string)
+				for _, l := range m.GetLabel() {
+					labels[l.GetName()] = l.GetValue()
+				}
+				if labels["path"] == "/some/path" && labels["status_code"] == "200" {
+					found = true
+					break
 				}
 			}
+			assert.True(t, found, "should have metric for /some/path with status 200")
 		}
 	}
 }

@@ -155,7 +155,7 @@ func TestPingHandler_ReturnsCorrectResponse(t *testing.T) {
 	assert.Equal(t, "available", body["status"])
 	assert.Equal(t, "test-app", body["service"])
 	assert.Equal(t, "1.0.0", body["version"])
-	assert.Equal(t, "127.0.0.1", body["hostname"])
+	assert.NotEmpty(t, body["hostname"])
 }
 
 func TestServer_Start_WhenServerStarted_ThenServesRequests(t *testing.T) {

@@ -83,7 +83,7 @@ func TestWithOpenAPI_WhenReaderFails_ReturnsError(t *testing.T) {
 	assert.ErrorContains(t, err, "failed to read spec")
 }
 
-func TestWithMiddleWares_WhenNoMiddlewares_ThenUserMiddlewaresEmpty(t *testing.T) {
+func TestWithMiddlewares_WhenNoMiddlewares_ThenUserMiddlewaresEmpty(t *testing.T) {
 	resetPrometheusRegistry()
 
 	cfg := setupTestConfig()
@@ -95,7 +95,7 @@ func TestWithMiddleWares_WhenNoMiddlewares_ThenUserMiddlewaresEmpty(t *testing.T
 	assert.Empty(t, srv.userMiddlewares)
 }
 
-func TestWithMiddleWares_WhenOneMiddleware_ThenAppendsMiddleware(t *testing.T) {
+func TestWithMiddlewares_WhenOneMiddleware_ThenAppendsMiddleware(t *testing.T) {
 	resetPrometheusRegistry()
 
 	cfg := setupTestConfig()
@@ -103,14 +103,14 @@ func TestWithMiddleWares_WhenOneMiddleware_ThenAppendsMiddleware(t *testing.T) {
 		return next
 	}
 
-	srv, err := New(cfg, WithMiddleWares(mw))
+	srv, err := New(cfg, WithMiddlewares(mw))
 	require.NoError(t, err)
 	require.NotNil(t, srv)
 
 	require.Len(t, srv.userMiddlewares, 1)
 }
 
-func TestWithMiddleWares_WhenMultipleMiddlewares_ThenAppendsAll(t *testing.T) {
+func TestWithMiddlewares_WhenMultipleMiddlewares_ThenAppendsAll(t *testing.T) {
 	resetPrometheusRegistry()
 
 	cfg := setupTestConfig()
@@ -118,28 +118,28 @@ func TestWithMiddleWares_WhenMultipleMiddlewares_ThenAppendsAll(t *testing.T) {
 	mw2 := func(next http.Handler) http.Handler { return next }
 	mw3 := func(next http.Handler) http.Handler { return next }
 
-	srv, err := New(cfg, WithMiddleWares(mw1, mw2, mw3))
+	srv, err := New(cfg, WithMiddlewares(mw1, mw2, mw3))
 	require.NoError(t, err)
 	require.NotNil(t, srv)
 
 	require.Len(t, srv.userMiddlewares, 3)
 }
 
-func TestWithMiddleWares_WhenMultipleCalls_ThenAppendsAll(t *testing.T) {
+func TestWithMiddlewares_WhenMultipleCalls_ThenAppendsAll(t *testing.T) {
 	resetPrometheusRegistry()
 
 	cfg := setupTestConfig()
 	mw1 := func(next http.Handler) http.Handler { return next }
 	mw2 := func(next http.Handler) http.Handler { return next }
 
-	srv, err := New(cfg, WithMiddleWares(mw1), WithMiddleWares(mw2))
+	srv, err := New(cfg, WithMiddlewares(mw1), WithMiddlewares(mw2))
 	require.NoError(t, err)
 	require.NotNil(t, srv)
 
 	require.Len(t, srv.userMiddlewares, 2)
 }
 
-func TestWithMiddleWares_WhenMiddlewareSetsHeader_ThenHeaderPresentInResponse(t *testing.T) {
+func TestWithMiddlewares_WhenMiddlewareSetsHeader_ThenHeaderPresentInResponse(t *testing.T) {
 	resetPrometheusRegistry()
 
 	cfg := setupTestConfig()
@@ -150,7 +150,7 @@ func TestWithMiddleWares_WhenMiddlewareSetsHeader_ThenHeaderPresentInResponse(t 
 		})
 	}
 
-	srv, err := New(cfg, WithMiddleWares(mw))
+	srv, err := New(cfg, WithMiddlewares(mw))
 	require.NoError(t, err)
 	require.NotNil(t, srv)
 

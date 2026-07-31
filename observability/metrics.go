@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -36,7 +37,7 @@ func InitMetrics(cfg *config.Config, logger *zap.Logger) (func(context.Context) 
 	mux.Handle(path, promhttp.Handler())
 
 	metricsHTTPServer := &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", cfg.Metrics.Host, cfg.Metrics.Port),
+		Addr:         net.JoinHostPort(cfg.Metrics.Host, fmt.Sprintf("%d", cfg.Metrics.Port)),
 		Handler:      mux,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
