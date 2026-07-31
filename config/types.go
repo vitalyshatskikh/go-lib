@@ -68,7 +68,12 @@ type SentryConfig struct {
 type PostgresConfig struct {
 	DSN SecretStr `env:"DSN" env-default:""`
 
-	Hosts    []string  `env:"HOSTS" env-default:"localhost:15432,localhost:15433"`
+	// Hosts is a comma-separated list of host:port pars:
+	//
+	// Example: "localhost:15432,localhost:15433"
+	//
+	// If empty then ConnString() uses Postgres default: "localhost:5432"
+	Hosts    []string  `env:"HOSTS" env-default:""`
 	User     string    `env:"USER" env-default:"postgres"`
 	Password SecretStr `env:"PASSWORD" env-default:"postgres"`
 	Database string    `env:"DATABASE" env-default:"postgres"`
